@@ -1,0 +1,49 @@
+{{template "header"}}
+
+<div class="calendar-nav">
+    <a href ="{{ .PrevMonth | calendarURL }}">
+        <i class="icon-arrow-left"></i>
+    </a>
+    <span class="calendar-yearmonth">
+        {{ .Month | yearMonthDisplay }}
+    </span>
+    <a href ="{{ .NextMonth | calendarURL }}">
+    <i class="icon-arrow-right"></i>
+    </a>
+</div>
+
+<div class="calendar-frame">
+    <div></div>
+    <div class="calendar-column-header">Sonntag</div>
+    <div class="calendar-column-header">Montag</div>
+    <div class="calendar-column-header">Dienstag</div>
+    <div class="calendar-column-header">Mittwoch</div>
+    <div class="calendar-column-header">Donnerstag</div>
+    <div class="calendar-column-header">Freitag</div>
+    <div class="calendar-column-header">Samstag</div>
+    {{ range .Days }}
+        {{ if .Date | isFirstOfWeek }}
+        <div class="calendar-week">
+            {{ .Date | ISOWeek }}
+        </div>
+        {{end}}
+        <div class="calendar-day">
+            <div class="calendar-day-no">{{ .Date.Format "2" }}</div>
+            <br>
+
+            {{ if .Document }}
+                <a href="/entry/{{ .Document.GUID }}" title="{{ .Document.Title }}">
+                    {{ if .Document.HasPreview }}
+                    <img src="{{ .Document.Preview }}">
+                    {{ else }}
+                    <div class="calendar-day-preview-placeholder">
+                        <i class="icon-entry-calendar"></i>
+                    </div>
+                    {{ end }}
+                </a>
+            {{ end }}
+        </div>
+    {{ end }}
+</div>
+
+{{template "footer"}}

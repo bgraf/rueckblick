@@ -1,0 +1,50 @@
+{{template "header"}}
+
+{{ if .Tag }}<h1>{{ .Tag}}</h1>{{ end }}
+{{ range .Groups }}
+<div class="index-group">
+    <div class="tag-icon-bar">
+        <div>
+            <h2>{{ .Date | yearMonthDisplay }}</h2>
+        </div>
+        <div style="display:flex; justify-content:center; flex-direction: column;">
+            <a href="{{ .Date | calendarURL }}"><i class="icon-calendar"></i></a>
+        </div>
+    </div>
+</div>
+{{ range $doc := .Documents }}
+<div class="index-entry">
+        <div class="index-entry-preview">
+            {{ if $doc.HasPreview }}
+                <img src="{{ $doc.Preview }}">
+            {{ end }}
+        </div>
+        <div class="index-entry-description">
+            <div class="entry-title-bar">
+                <div class="entry-date">
+                    {{ $doc.Date.Format "2006-01-02" }}
+                </div>
+                <div>
+                    <a href="/entry/{{ .GUID.String }}">
+                        <h2>{{ $doc.Title }}</h2>
+                    </a>
+                </div>
+            </div>
+        
+            <div class="abstract">
+                {{ if $doc.HasAbstract }} {{ $doc.Abstract }} {{ end }}
+            </div>
+            
+            <div class="tag-icon-bar">
+                <div class="tag-bar">
+                    {{template "tagbar" $doc.Tags}}
+                </div>
+                <div class="tag-bar">
+                    {{ template "icon-bar" $doc }}
+                </div>
+            </div>
+        </div>
+</div>
+{{ end }}
+{{ end }}
+{{template "footer"}}

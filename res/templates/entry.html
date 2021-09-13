@@ -1,0 +1,21 @@
+{{template "header"}}
+<div class="entry-title-bar">
+    <div class="entry-date">
+        {{ .Document.Date.Format "2006-01-02" }}
+    </div>
+    <div>
+        <h1>{{ .Document.Title }}</h1>
+    </div>
+</div>
+<div class="tag-icon-bar">
+    <div class="tag-bar">
+        {{template "tagbar" .Document.Tags}}
+    </div>
+    <div class="tag-bar">
+        {{ template "icon-bar" .Document }}
+    </div>
+</div>
+<div id="content">
+    {{ .Fragment }}
+</div>
+{{template "footer"}}

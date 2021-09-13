@@ -1,0 +1,42 @@
+{{define "header" }}
+<html>
+    <head>
+        <meta charset="utf8"/>
+        <link rel="stylesheet" href="/static/css/live.css">
+
+        <link rel="stylesheet" href="/static/leaflet/leaflet.css" />
+        <script src="/static/js/theme.js" defer></script>
+        <script src="/static/leaflet/leaflet.js" defer></script>
+        <script src="/static/js/maps.js" defer></script>
+
+        
+        <title>Rückblick</title>
+    </head>
+    <body>
+        <header>
+            <div class="content">
+                <a href="/"><h1>Rückblick</h1></a>
+                <nav>
+                    <ul id="menu">
+                        <li><a href="/">Index</a></li>
+                        <li><a href="{{ today | calendarURL }}">Kalender</a></li>
+                        <li><a href="/tags/">Tags</a></li>
+                    </ul>
+                    <div class="theme-switch-wrapper">
+                        <label class="theme-switch" for="checkbox">
+                            <input type="checkbox" id="checkbox" />
+                            <div class="slider round"></div>
+                        </label>
+                        <script src="/static/js/theme.js"></script>
+                    </div>
+                </nav>
+            </div>
+        </header>
+        <div id="main">
+{{end}}
+
+{{define "footer"}}
+        </div>
+    </body>
+</html>
+{{end}}
