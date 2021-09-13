@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"gitlab.com/begraf/rueckblick/cmd/serve"
+	"github.com/bgraf/rueckblick/cmd/serve"
 )
 
 // serveCmd represents the serve command

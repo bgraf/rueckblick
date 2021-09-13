@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"gitlab.com/begraf/rueckblick/document"
-	"gitlab.com/begraf/rueckblick/util/dates"
+	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/util/dates"
 )
 
 func (api *serveAPI) ServeIndex(c *gin.Context) {

@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	"gitlab.com/begraf/rueckblick/document"
-	"gitlab.com/begraf/rueckblick/markdown/gpx"
+	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/markdown/gpx"
 )
 
 type rewriter struct {

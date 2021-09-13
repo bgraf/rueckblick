@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/yuin/goldmark/parser"
-	"gitlab.com/begraf/rueckblick/markdown/yamlblock"
+	"github.com/bgraf/rueckblick/markdown/yamlblock"
 )
 
 var galleryCount = parser.NewContextKey()

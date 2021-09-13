@@ -12,7 +12,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/spf13/cobra"
-	"gitlab.com/begraf/rueckblick/config"
+	"github.com/bgraf/rueckblick/config"
 	"gopkg.in/yaml.v2"
 )
 

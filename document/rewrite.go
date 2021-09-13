@@ -1,6 +1,6 @@
 package document
 
-import "gitlab.com/begraf/rueckblick/markdown/gpx"
+import "github.com/bgraf/rueckblick/markdown/gpx"
 
 type DocumentMediaRewriter interface {
 	MakeRewriter(*Document) MediaRewriter

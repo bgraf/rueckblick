@@ -9,7 +9,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
-	"gitlab.com/begraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/document"
 )
 
 type PathRecoder struct {

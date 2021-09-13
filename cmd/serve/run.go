@@ -14,9 +14,9 @@ import (
 	"github.com/goodsign/monday"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
-	"gitlab.com/begraf/rueckblick/config"
-	"gitlab.com/begraf/rueckblick/document"
-	"gitlab.com/begraf/rueckblick/render"
+	"github.com/bgraf/rueckblick/config"
+	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/render"
 )
 
 func tagIdentifier(tag string) string {

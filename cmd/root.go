@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"gitlab.com/begraf/rueckblick/config"
+	"github.com/bgraf/rueckblick/config"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"

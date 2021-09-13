@@ -8,7 +8,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/util"
 
-	"gitlab.com/begraf/rueckblick/images"
+	"github.com/bgraf/rueckblick/images"
 )
 
 func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{}, entering bool) (ast.WalkStatus, error) {

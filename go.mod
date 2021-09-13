@@ -1,4 +1,4 @@
-module gitlab.com/begraf/rueckblick
+module github.com/bgraf/rueckblick
 
 go 1.17
 

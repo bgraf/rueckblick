@@ -1,6 +1,6 @@
 package main
 
-import "gitlab.com/begraf/rueckblick/cmd"
+import "github.com/bgraf/rueckblick/cmd"
 
 func main() {
 	cmd.Execute()

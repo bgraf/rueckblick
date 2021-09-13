@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/PuerkitoBio/goquery"
-	"gitlab.com/begraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/document"
 	"golang.org/x/net/html"
 )
 

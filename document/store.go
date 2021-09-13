@@ -17,10 +17,10 @@ import (
 	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
-	"gitlab.com/begraf/rueckblick/markdown/gallery"
-	"gitlab.com/begraf/rueckblick/markdown/gpx"
-	"gitlab.com/begraf/rueckblick/markdown/yamlblock"
-	"gitlab.com/begraf/rueckblick/util/slices"
+	"github.com/bgraf/rueckblick/markdown/gallery"
+	"github.com/bgraf/rueckblick/markdown/gpx"
+	"github.com/bgraf/rueckblick/markdown/yamlblock"
+	"github.com/bgraf/rueckblick/util/slices"
 )
 
 type Store struct {
