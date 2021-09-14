@@ -200,7 +200,7 @@ a:hover {
 }
 
 .index-entry h2 {
-    margin:0 0 10px 0;
+    margin:0 0 0 0;
 }
 
 .index-entry-preview {
@@ -238,7 +238,7 @@ a:hover {
     margin-bottom: 5px;
 }
 
-.entry-title-bar h1, h2 {
+.entry-title-bar h1, .entry-title-bar h2 {
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -370,23 +370,30 @@ a:hover {
 }
 
 .gallery {
+    /*
     display:flex;
     justify-content: space-between;
     flex-wrap: wrap;
+    */
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    column-gap: 10px;
+    row-gap: 10px;
 }
 
 .gallery-entry {
     display: flex;
     justify-content: center;
     align-items: center;
-    width:200px;
-    max-height:200px;
-    margin:5px;
+
+
+    width: 100%;
+    max-height:400px;
 }
 
 .gallery-entry img {
-    width:200px;
     border-radius: 5px;
+    max-width: 100%;
 }
 
 .calendar-frame {
@@ -467,7 +474,7 @@ a:hover {
 }
 
 .gpx-map {
-    height: 700px;
+    height: 600px;
     border-radius: 5px;
 }
 

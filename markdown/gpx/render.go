@@ -26,10 +26,12 @@ func (g *GPXAddin) Render(w util.BufWriter, source []byte, object interface{}, e
 
 	w.WriteString(fmt.Sprintf(`
 		<script>
-		let mapContainer = document.currentScript.parentElement;
-		window.addEventListener('DOMContentLoaded', function() {
-			loadAndMountMap(mapContainer, { 'dataURL': '%s' })
-		});
+		(function () {
+			let mapContainer = document.currentScript.parentElement;
+			window.addEventListener('DOMContentLoaded', function() {
+				loadAndMountMap(mapContainer, { 'dataURL': '%s' })
+			});
+		})();
 		</script>`,
 		resPath,
 	))

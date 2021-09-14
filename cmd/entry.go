@@ -11,8 +11,8 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/spf13/cobra"
 	"github.com/bgraf/rueckblick/config"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
@@ -122,7 +122,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	fmt.Println("author: ", author)
 	fmt.Printf("Tags: %v\n", tags)
 
-	date, err := time.Parse("2006-01-01", dateStr)
+	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
 		// Should not happen due to validator
 		panic(err)
