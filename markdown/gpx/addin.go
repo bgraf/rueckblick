@@ -25,13 +25,17 @@ type GPXSourceProvider interface {
 	ProvideGPXSource(srcPath string) (string, bool)
 }
 
-type GPXAddin struct {
-	sourceProvider GPXSourceProvider
+type Options struct {
+	ProvideSource func(mapNo int, srcPath string) (string, bool)
 }
 
-func NewGPXAddin(sourceProvider GPXSourceProvider) *GPXAddin {
+type GPXAddin struct {
+	options *Options
+}
+
+func NewGPXAddin(options *Options) *GPXAddin {
 	return &GPXAddin{
-		sourceProvider: sourceProvider,
+		options: options,
 	}
 }
 
@@ -47,7 +51,7 @@ func (g *GPXAddin) Make(pc parser.Context) interface{} {
 
 	return &gpxNode{
 		documentPath: path,
-		count:        getAndIncreaseGalleryCount(pc),
+		mapNo:        getAndIncreaseGalleryCount(pc),
 	}
 }
 

@@ -35,10 +35,22 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 
 	rootDirectory := config.JournalDirectory()
 
-	rewriter := newRewriter()
+	rewriter := newResourceMap()
+
+	storeOpts := &document.StoreOptions{
+		MapGPXResource: func(doc *document.Document, srcPath string) (document.Resource, bool) {
+			guid := rewriter.IDFromPath(srcPath)
+			res := document.Resource{
+				GUID: guid,
+				URI:  fmt.Sprintf("/gpx/%s", guid.String()),
+			}
+			return res, true
+		},
+	}
+
 	store, err := document.NewStore(
 		rootDirectory,
-		newDocumentRewriter(rewriter),
+		storeOpts,
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -109,10 +121,10 @@ type serveAPI struct {
 	tagSet      *render.TagSet
 	pathRecoder *render.PathRecoder
 	live        bool
-	rewriter    *rewriter
+	rewriter    *resourceMap
 }
 
-func newServeAPI(store *document.Store, rewriter *rewriter) *serveAPI {
+func newServeAPI(store *document.Store, rewriter *resourceMap) *serveAPI {
 	store.OrderDocumentsByDate()
 	store.OrderTags()
 

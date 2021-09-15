@@ -2,6 +2,6 @@ package gpx
 
 type gpxNode struct {
 	documentPath string
-	count        int
+	mapNo        int
 	File         string `yaml:"file"`
 }

@@ -12,15 +12,15 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/bgraf/rueckblick/markdown/gallery"
+	"github.com/bgraf/rueckblick/markdown/gpx"
+	"github.com/bgraf/rueckblick/markdown/yamlblock"
+	"github.com/bgraf/rueckblick/util/slices"
 	"github.com/google/uuid"
 	"github.com/yuin/goldmark"
 	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
-	"github.com/bgraf/rueckblick/markdown/gallery"
-	"github.com/bgraf/rueckblick/markdown/gpx"
-	"github.com/bgraf/rueckblick/markdown/yamlblock"
-	"github.com/bgraf/rueckblick/util/slices"
 )
 
 type Store struct {
@@ -28,14 +28,14 @@ type Store struct {
 	Documents           []*Document
 	tagByNormalizedName map[string]Tag
 	tags                []Tag
-	mediaRewriter       DocumentMediaRewriter
+	options             *StoreOptions
 }
 
-func NewStore(rootDirectory string, rewriter DocumentMediaRewriter) (*Store, error) {
+func NewStore(rootDirectory string, options *StoreOptions) (*Store, error) {
 	store := &Store{
 		RootDirectory:       rootDirectory,
 		tagByNormalizedName: make(map[string]Tag),
-		mediaRewriter:       rewriter,
+		options:             options,
 	}
 
 	var err error
@@ -176,14 +176,32 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 		Path: path,
 	}
 
-	rewriter := s.mediaRewriter.MakeRewriter(doc)
+	gpxOpts := &gpx.Options{
+		ProvideSource: func(mapNo int, srcPath string) (string, bool) {
+			res, ok := s.options.MapGPXResource(doc, srcPath)
+			if !ok {
+				return "", false
+			}
+
+			doc.Maps = append(
+				doc.Maps,
+				GXPMap{
+					GPXPath:   srcPath,
+					Resource:  res,
+					ElementID: gpx.ElementID(mapNo),
+				},
+			)
+
+			return res.URI, true
+		},
+	}
 
 	gmark := goldmark.New(
 		goldmark.WithExtensions(
 			meta.Meta,
 			yamlblock.New(
 				gallery.NewGalleryAddin(),
-				gpx.NewGPXAddin(rewriter),
+				gpx.NewGPXAddin(gpxOpts),
 			),
 		),
 		goldmark.WithRendererOptions(

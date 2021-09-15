@@ -2,6 +2,7 @@ package serve
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +11,14 @@ import (
 
 func (api *serveAPI) ServeGPX(c *gin.Context) {
 	key := c.Param("GUID")
-	gpxFilePath, ok := api.rewriter.PathFromID(key)
+
+	guid, err := uuid.Parse(key)
+	if err != nil {
+		c.String(http.StatusNotFound, "not found")
+		return
+	}
+
+	gpxFilePath, ok := api.rewriter.PathFromID(guid)
 	if !ok {
 		c.String(http.StatusNotFound, "not found")
 		return

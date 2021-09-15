@@ -8,9 +8,9 @@ import (
 )
 
 type GXPMap struct {
-	GPXPath    string
-	ResourceID string
-	ElementID  string
+	GPXPath   string
+	Resource  Resource
+	ElementID string
 }
 
 type Document struct {

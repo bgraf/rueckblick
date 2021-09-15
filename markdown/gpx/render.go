@@ -15,13 +15,13 @@ func (g *GPXAddin) Render(w util.BufWriter, source []byte, object interface{}, e
 
 	node := object.(*gpxNode)
 	gpxFilePath := filepath.Join(filepath.Dir(node.documentPath), node.File)
-	resPath, ok := g.sourceProvider.ProvideGPXSource(gpxFilePath)
+	resPath, ok := g.options.ProvideSource(node.mapNo, gpxFilePath)
 	if !ok {
 		return ast.WalkSkipChildren, nil
 	}
 
 	w.WriteString("<div class=\"gpx-map\" id=\"")
-	w.WriteString(ElementID(node.count))
+	w.WriteString(ElementID(node.mapNo))
 	w.WriteString("\">")
 
 	w.WriteString(fmt.Sprintf(`
