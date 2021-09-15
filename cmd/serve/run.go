@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"time"
@@ -70,7 +71,6 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 	api := newServeAPI(store, rewriter)
 	r.GET("/", api.ServeIndex)
 	r.GET("/entry/:GUID", api.ServeEntry)
-	r.GET("/resource/:name", api.ServeResource)
 	r.GET("/image/:GUID", api.ServeImage)
 	r.GET("/tags/", api.ServeTags)
 	r.GET("/tag/:tag", api.ServeTag)
@@ -127,11 +127,10 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 }
 
 type serveAPI struct {
-	store       *document.Store
-	tagSet      *render.TagSet
-	pathRecoder *render.PathRecoder
-	live        bool
-	rewriter    *resourceMap
+	store    *document.Store
+	tagSet   *render.TagSet
+	live     bool
+	rewriter *resourceMap
 }
 
 func newServeAPI(store *document.Store, rewriter *resourceMap) *serveAPI {
@@ -139,14 +138,12 @@ func newServeAPI(store *document.Store, rewriter *resourceMap) *serveAPI {
 	store.OrderTags()
 
 	tagSet := render.NewTagSet()
-	pathRecoder := render.NewPathRecoder()
 
 	api := &serveAPI{
-		store:       store,
-		tagSet:      tagSet,
-		pathRecoder: pathRecoder,
-		live:        true,
-		rewriter:    rewriter,
+		store:    store,
+		tagSet:   tagSet,
+		live:     true,
+		rewriter: rewriter,
 	}
 
 	for _, doc := range store.Documents {
@@ -159,13 +156,21 @@ func newServeAPI(store *document.Store, rewriter *resourceMap) *serveAPI {
 func (api *serveAPI) prepareDocument(doc *document.Document) {
 	render.ImplicitFigure(doc)
 
-	api.pathRecoder.RecodeDocument(doc, "/resource")
+	recoderFunc := func(original string) (string, bool) {
+		srcPath := filepath.Join(filepath.Dir(doc.Path), original)
+		guid := api.rewriter.IDFromPath(srcPath)
+		return fmt.Sprintf("/image/%s", guid.String()), true
+	}
+
+	render.RecodePaths(doc, recoderFunc)
+
 	for _, t := range doc.Tags {
 		api.tagSet.HexColor(t.String())
 	}
 
 	if doc.HasPreview() {
-		doc.Preview = api.pathRecoder.RecodeDocumentPath(doc, doc.Preview, "/resource")
+		doc.Preview, _ = recoderFunc(doc.Preview)
+
 	}
 }
 
@@ -209,18 +214,6 @@ func (api *serveAPI) ServeEntry(c *gin.Context) {
 		"Document": doc,
 		"Fragment": template.HTML(fragment),
 	})
-}
-
-func (api *serveAPI) ServeResource(c *gin.Context) {
-	resourceName := c.Param("name")
-	resourcePath, ok := api.pathRecoder.Decode(resourceName)
-	if !ok {
-		c.String(http.StatusNotFound, "not found")
-		return
-	}
-
-	c.Status(http.StatusOK)
-	c.File(resourcePath)
 }
 
 func (api *serveAPI) ServeImage(c *gin.Context) {
@@ -278,7 +271,7 @@ func (api *serveAPI) ServeCalendar(c *gin.Context) {
 		Document *document.Document
 	}
 
-	calendarDays := []calendarDay{}
+	var calendarDays []calendarDay
 
 	curr := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
 	target := curr.AddDate(0, 1, 0)
