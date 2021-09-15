@@ -11,7 +11,7 @@
 {{define "icon-bar"}}
 <div class="icon-bar">
 {{ if .HasGallery }}
-    <a href="/entry/{{ .GUID.String }}#{{ index .Galleries 0 }}"><i class="icon-gallery-fill"></i></a>
+    <a href="/entry/{{ .GUID.String }}#{{ .GalleryElementID 0 }}"><i class="icon-gallery-fill"></i></a>
 {{ end }}
 {{ if .HasMap }}
     <a href="/entry/{{ .GUID.String }}#{{ .MapElementID 0 }}"><i class="icon-map"></i></a>

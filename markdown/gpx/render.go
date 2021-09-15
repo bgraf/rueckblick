@@ -20,11 +20,11 @@ func (g *GPXAddin) Render(w util.BufWriter, source []byte, object interface{}, e
 		return ast.WalkSkipChildren, nil
 	}
 
-	w.WriteString("<div class=\"gpx-map\" id=\"")
-	w.WriteString(ElementID(node.mapNo))
-	w.WriteString("\">")
+	_, _ = w.WriteString("<div class=\"gpx-map\" id=\"")
+	_, _ = w.WriteString(ElementID(node.mapNo))
+	_, _ = w.WriteString("\">")
 
-	w.WriteString(fmt.Sprintf(`
+	_, _ = w.WriteString(fmt.Sprintf(`
 		<script>
 		(function () {
 			let mapContainer = document.currentScript.parentElement;
@@ -35,7 +35,7 @@ func (g *GPXAddin) Render(w util.BufWriter, source []byte, object interface{}, e
 		</script>`,
 		resPath,
 	))
-	w.WriteString("</div>")
+	_, _ = w.WriteString("</div>")
 
 	return ast.WalkSkipChildren, nil
 }

@@ -63,9 +63,9 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 		},
 	)
 
-	w.WriteString("<div class=\"gallery\" id=\"")
-	w.WriteString(ElementID(node.count))
-	w.WriteString("\">")
+	_, _ = w.WriteString("<div class=\"gallery\" id=\"")
+	_, _ = w.WriteString(ElementID(node.count))
+	_, _ = w.WriteString("\">")
 
 	for _, file := range filesExif {
 		resPath, ok := g.options.ProvideSource(node.count, file.path)
@@ -73,22 +73,22 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 			continue
 		}
 
-		w.WriteString("<div class=\"gallery-entry\"><a href=\"")
-		w.WriteString(resPath)
-		w.WriteString("\"><img class=\"gallery-item\" src=\"")
-		w.WriteString(resPath)
-		w.WriteString("\"")
+		_, _ = w.WriteString("<div class=\"gallery-entry\"><a href=\"")
+		_, _ = w.WriteString(resPath)
+		_, _ = w.WriteString("\"><img class=\"gallery-item\" src=\"")
+		_, _ = w.WriteString(resPath)
+		_, _ = w.WriteString("\"")
 
 		if file.exif != nil && file.exif.Time != nil {
-			w.WriteString(" title=\"")
-			w.WriteString(file.exif.Time.Format("2006-01-02 15:04:05"))
-			w.WriteString("\"")
+			_, _ = w.WriteString(" title=\"")
+			_, _ = w.WriteString(file.exif.Time.Format("2006-01-02 15:04:05"))
+			_, _ = w.WriteString("\"")
 		}
 
-		w.WriteString("></a></div>")
+		_, _ = w.WriteString("></a></div>")
 	}
 
-	w.WriteString("</div>")
+	_, _ = w.WriteString("</div>")
 
 	return ast.WalkSkipChildren, nil
 }

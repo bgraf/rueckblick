@@ -203,6 +203,15 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 				return "", false
 			}
 
+			for len(doc.Galleries) <= galleryNo {
+				doc.Galleries = append(
+					doc.Galleries,
+					&Gallery{ElementID: gallery.ElementID(len(doc.Galleries))},
+				)
+			}
+
+			doc.Galleries[galleryNo].AppendImage(res, srcPath)
+
 			return res.URI, true
 		},
 	}
@@ -239,12 +248,6 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 	err = populateFromYAMLMetaData(doc, meta.Get(pc))
 	if err != nil {
 		return nil, fmt.Errorf("could not parse YAML meta data: %w", err)
-	}
-
-	// Add gallery IDs
-	galleryCount := gallery.Count(pc)
-	for i := 0; i < galleryCount; i++ {
-		doc.Galleries = append(doc.Galleries, gallery.ElementID(i))
 	}
 
 	return doc, nil
