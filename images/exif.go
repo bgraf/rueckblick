@@ -23,11 +23,11 @@ func ReadEXIFFromFile(path string) (*EXIFData, error) {
 		return nil, fmt.Errorf("exif.Decode failed: %w", err)
 	}
 
-	exif := &EXIFData{}
+	exifData := &EXIFData{}
 
 	if tm, err := x.DateTime(); err == nil {
-		exif.Time = &tm
+		exifData.Time = &tm
 	}
 
-	return exif, nil
+	return exifData, nil
 }

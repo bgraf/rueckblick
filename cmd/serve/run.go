@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bgraf/rueckblick/config"
+	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/render"
 	"github.com/gin-gonic/gin"
 	"github.com/goodsign/monday"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
-	"github.com/bgraf/rueckblick/config"
-	"github.com/bgraf/rueckblick/document"
-	"github.com/bgraf/rueckblick/render"
 )
 
 func tagIdentifier(tag string) string {

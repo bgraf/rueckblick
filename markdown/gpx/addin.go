@@ -3,8 +3,8 @@ package gpx
 import (
 	"fmt"
 
-	"github.com/yuin/goldmark/parser"
 	"github.com/bgraf/rueckblick/markdown/yamlblock"
+	"github.com/yuin/goldmark/parser"
 )
 
 var gpxMapCount = parser.NewContextKey()
