@@ -484,3 +484,16 @@ a:hover {
     display:inline-block;
     vertical-align: middle;
 }
+
+.gpx-map-marker {
+    width: 150px;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.gpx-map-marker img {
+    max-width: 100%;
+    max-height: 100%;
+}

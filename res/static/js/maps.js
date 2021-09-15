@@ -47,11 +47,22 @@ function mountMap(container, data) {
     map.on('blur', function() { map.scrollWheelZoom.disable(); });
 
     let latlngs = data.track;
-
     const polyline = L.polyline(latlngs, { color: 'blue' }).addTo(map);
 
-    function mapFitBounds() {
-        map.fitBounds(polyline.getBounds());
+    if (data.images !== undefined) {
+        data.images.forEach(function (img) {
+            console.log(img);
+            let marker = L.marker(img.LatLng).addTo(map);
+
+            let popupContainer = L.DomUtil.create('div', 'gpx-map-marker');
+            let popupAnchor = L.DomUtil.create('a', '', popupContainer);
+            popupAnchor.href = img.URI;
+            let popupImage = L.DomUtil.create('img', '', popupAnchor);
+            popupImage.src = img.URI;
+
+            marker.bindPopup(popupContainer);
+
+        });
     }
 
     L.control.focusControl(
@@ -61,6 +72,9 @@ function mountMap(container, data) {
         }
     ).addTo(map);
 
+    function mapFitBounds() {
+        map.fitBounds(polyline.getBounds());
+    }
     mapFitBounds();
 }
 
