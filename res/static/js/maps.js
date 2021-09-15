@@ -13,8 +13,8 @@
 
             button.addEventListener('click', function (e) {
                 e.preventDefault();
-                var bounds = paths[0].getBounds();
-                for (var i = 1; i < paths.length; i++) {
+                let bounds = paths[0].getBounds();
+                for (let i = 1; i < paths.length; i++) {
                     bounds.extend(paths[i].getBounds());
                 }
                 map.fitBounds(bounds);
@@ -35,7 +35,7 @@
 })();
 
 function mountMap(container, data) {
-    var map = L.map(container, {
+    let map = L.map(container, {
         scrollWheelZoom: false,
     });
 
@@ -46,13 +46,21 @@ function mountMap(container, data) {
     map.on('focus', function() { map.scrollWheelZoom.enable(); });
     map.on('blur', function() { map.scrollWheelZoom.disable(); });
 
-    let latlngs = data.track;
-    const polyline = L.polyline(latlngs, { color: 'blue' }).addTo(map);
+
+    const overlayLayers = {}
+    const focusControlLayers = [];
+
+    if (data.track !== undefined) {
+        let latLngs = data.track;
+        const polyline = L.polyline(latLngs, { color: 'blue' }).addTo(map);
+        overlayLayers.Track = polyline;
+        focusControlLayers.push(polyline);
+    }
 
     if (data.images !== undefined) {
-        data.images.forEach(function (img) {
+        const markers = data.images.map(function (img) {
             console.log(img);
-            let marker = L.marker(img.LatLng).addTo(map);
+            let marker = L.marker(img.LatLng);
 
             let popupContainer = L.DomUtil.create('div', 'gpx-map-marker');
             let popupAnchor = L.DomUtil.create('a', '', popupContainer);
@@ -62,18 +70,23 @@ function mountMap(container, data) {
 
             marker.bindPopup(popupContainer);
 
+            return marker;
         });
+
+        overlayLayers.Photos = L.layerGroup(markers).addTo(map);
     }
 
+    L.control.layers({}, overlayLayers).addTo(map);
+
     L.control.focusControl(
-        [polyline], 
+        focusControlLayers,
         {
             position: 'topleft',
         }
     ).addTo(map);
 
     function mapFitBounds() {
-        map.fitBounds(polyline.getBounds());
+        map.fitBounds(focusControlLayers[0].getBounds());
     }
     mapFitBounds();
 }
@@ -81,7 +94,7 @@ function mountMap(container, data) {
 function loadAndMountMap(container, opts) {
     let http = new XMLHttpRequest();
     http.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
+        if (this.readyState === 4 && this.status === 200) {
             const data = JSON.parse(this.responseText);
             mountMap(container, data);
         }
