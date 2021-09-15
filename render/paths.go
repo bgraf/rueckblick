@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/google/uuid"
 	"github.com/bgraf/rueckblick/document"
+	"github.com/google/uuid"
 )
 
 type PathRecoder struct {
@@ -34,7 +34,7 @@ func (pr *PathRecoder) RecodeDocument(doc *document.Document, routePrefix string
 			log.Fatal("error parsing uri: ", err)
 		}
 
-		if uri.IsAbs() {
+		if uri.IsAbs() || filepath.IsAbs(uri.Path) {
 			// The URI is not relative, thus we do not change it.
 			// TODO: exclude "file:///" absolute uris.
 			return

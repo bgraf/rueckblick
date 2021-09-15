@@ -68,10 +68,15 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 	w.WriteString("\">")
 
 	for _, file := range filesExif {
+		resPath, ok := g.options.ProvideSource(node.count, file.path)
+		if !ok {
+			continue
+		}
+
 		w.WriteString("<div class=\"gallery-entry\"><a href=\"")
-		w.WriteString(file.path)
+		w.WriteString(resPath)
 		w.WriteString("\"><img class=\"gallery-item\" src=\"")
-		w.WriteString(file.path)
+		w.WriteString(resPath)
 		w.WriteString("\"")
 
 		if file.exif != nil && file.exif.Time != nil {

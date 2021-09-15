@@ -46,6 +46,15 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 			}
 			return res, true
 		},
+
+		MapImageResource: func(doc *document.Document, galleryNo int, srcPath string) (document.Resource, bool) {
+			guid := rewriter.IDFromPath(srcPath)
+			res := document.Resource{
+				GUID: guid,
+				URI:  fmt.Sprintf("/image/%s", guid.String()),
+			}
+			return res, true
+		},
 	}
 
 	store, err := document.NewStore(
@@ -62,6 +71,7 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 	r.GET("/", api.ServeIndex)
 	r.GET("/entry/:GUID", api.ServeEntry)
 	r.GET("/resource/:name", api.ServeResource)
+	r.GET("/image/:GUID", api.ServeImage)
 	r.GET("/tags/", api.ServeTags)
 	r.GET("/tag/:tag", api.ServeTag)
 	r.GET("/calendar/:year/:month", api.ServeCalendar)
@@ -211,6 +221,24 @@ func (api *serveAPI) ServeResource(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 	c.File(resourcePath)
+}
+
+func (api *serveAPI) ServeImage(c *gin.Context) {
+	guidStr := c.Param("GUID")
+	guid, err := uuid.Parse(guidStr)
+	if err != nil {
+		c.String(http.StatusNotFound, "not found")
+		return
+	}
+
+	path, ok := api.rewriter.PathFromID(guid)
+	if !ok {
+		c.String(http.StatusNotFound, "not found")
+		return
+	}
+
+	c.Status(http.StatusOK)
+	c.File(path)
 }
 
 func (api *serveAPI) ServeCalendar(c *gin.Context) {

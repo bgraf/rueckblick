@@ -196,11 +196,22 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 		},
 	}
 
+	galleryOpts := &gallery.Options{
+		ProvideSource: func(galleryNo int, srcPath string) (string, bool) {
+			res, ok := s.options.MapImageResource(doc, galleryNo, srcPath)
+			if !ok {
+				return "", false
+			}
+
+			return res.URI, true
+		},
+	}
+
 	gmark := goldmark.New(
 		goldmark.WithExtensions(
 			meta.Meta,
 			yamlblock.New(
-				gallery.NewGalleryAddin(),
+				gallery.NewGalleryAddin(galleryOpts),
 				gpx.NewGPXAddin(gpxOpts),
 			),
 		),

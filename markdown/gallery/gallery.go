@@ -3,8 +3,8 @@ package gallery
 import (
 	"fmt"
 
-	"github.com/yuin/goldmark/parser"
 	"github.com/bgraf/rueckblick/markdown/yamlblock"
+	"github.com/yuin/goldmark/parser"
 )
 
 var galleryCount = parser.NewContextKey()
@@ -21,11 +21,18 @@ func ElementID(number int) string {
 	return fmt.Sprintf("gallery-%02d", number)
 }
 
-type GalleryAddin struct {
+type Options struct {
+	ProvideSource func(galleryNo int, srcPath string) (string, bool)
 }
 
-func NewGalleryAddin() yamlblock.Addin {
-	return &GalleryAddin{}
+type GalleryAddin struct {
+	options *Options
+}
+
+func NewGalleryAddin(options *Options) yamlblock.Addin {
+	return &GalleryAddin{
+		options: options,
+	}
 }
 
 func (g *GalleryAddin) AddinKey() string {
