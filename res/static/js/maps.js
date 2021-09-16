@@ -50,14 +50,14 @@ function mountMap(container, data) {
     const overlayLayers = {}
     const focusControlLayers = [];
 
-    if (data.track !== undefined) {
+    if (data.track) {
         let latLngs = data.track;
         const polyline = L.polyline(latLngs, { color: 'blue' }).addTo(map);
         overlayLayers.Track = polyline;
         focusControlLayers.push(polyline);
     }
 
-    if (data.images !== undefined) {
+    if (data.images) {
         const markers = data.images.map(function (img) {
             console.log(img);
             let marker = L.marker(img.LatLng);
