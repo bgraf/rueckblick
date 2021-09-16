@@ -35,29 +35,19 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	// Read date
 	dateStr := time.Now().Format("2006-01-02")
 	{
-		prompt := survey.Confirm{
-			Message: fmt.Sprintf("Today (%s)", dateStr),
-			Default: true,
+		prompt := survey.Input{
+			Message: "Date",
+			Default: dateStr,
 		}
-		isToday := true
-		err := survey.AskOne(&prompt, &isToday)
+		err := survey.AskOne(
+			&prompt,
+			&dateStr,
+			survey.WithValidator(func(ans interface{}) error {
+				_, err := time.Parse("2006-01-02", ans.(string))
+				return err
+			}),
+		)
 		exitOnInterrupt(err)
-
-		if !isToday {
-			prompt := survey.Input{
-				Message: "Date",
-			}
-			err := survey.AskOne(
-				&prompt,
-				&dateStr,
-				survey.WithValidator(func(ans interface{}) error {
-					_, err := time.Parse("2006-01-02", ans.(string))
-					return err
-				}),
-			)
-			exitOnInterrupt(err)
-		}
-
 	}
 
 	// Read title
@@ -83,7 +73,31 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		exitOnInterrupt(err)
 	}
 
-	tags := []string{}
+	var (
+		locations []string
+		tags      []string
+	)
+
+	{
+		prompt := survey.Input{
+			Message: "Location",
+		}
+		for {
+			location := ""
+			err := survey.AskOne(&prompt, &location)
+			exitOnInterrupt(err)
+
+			location = strings.TrimSpace(location)
+			if len(location) > 0 {
+				fmt.Println()
+				locations = append(locations, location)
+				continue
+			}
+
+			break
+		}
+	}
+
 	{
 		prompt := survey.Input{
 			Message: "Tag",
@@ -154,16 +168,28 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	// Write front-matter
 	fmt.Fprintln(f, "---")
 
+	var tagMap map[string][]string
+	nTags := len(tags) + len(locations)
+	if nTags > 0 {
+		tagMap = make(map[string][]string)
+		if len(tags) > 0 {
+			tagMap["general"] = tags
+		}
+		if len(locations) > 0 {
+			tagMap["location"] = locations
+		}
+	}
+
 	frontMatter := struct {
-		Title   string   `yaml:"title"`
-		DateStr string   `yaml:"date"`
-		Author  string   `yaml:"author"`
-		Tags    []string `yaml:"tags"`
+		Title   string              `yaml:"title"`
+		DateStr string              `yaml:"date"`
+		Author  string              `yaml:"author"`
+		Tags    map[string][]string `yaml:"tags,omitempty"`
 	}{
 		Title:   title,
 		DateStr: dateStr,
 		Author:  author,
-		Tags:    tags,
+		Tags:    tagMap,
 	}
 
 	enc := yaml.NewEncoder(f)
