@@ -2,7 +2,6 @@ package serve
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/bgraf/rueckblick/document"
 	"github.com/bgraf/rueckblick/images"
 	"github.com/gin-gonic/gin"
@@ -37,7 +36,10 @@ func (api *serveAPI) ServeGPX(c *gin.Context) {
 
 	track := readGPXTrack(gpxData)
 
-	locatedImages := loadMatchingImages(api, guid, gpxData)
+	var locatedImages []locatedImage
+	if doc := findDocumentByMapGUID(api.store.Documents, guid); doc != nil {
+		locatedImages = findMatchingImages(doc, track)
+	}
 
 	c.JSON(
 		http.StatusOK,
@@ -48,6 +50,20 @@ func (api *serveAPI) ServeGPX(c *gin.Context) {
 	)
 }
 
+// findDocumentByTrackGUID searches documents for a document that contains a map of the given guid.
+// The matching document is returned or nil, if no document could be found.
+func findDocumentByMapGUID(documents []*document.Document, guid uuid.UUID) *document.Document {
+	for _, doc := range documents {
+		for _, m := range doc.Maps {
+			if m.Resource.GUID == guid {
+				return doc
+			}
+		}
+	}
+
+	return nil
+}
+
 type locatedImage struct {
 	URI    string
 	LatLng point
@@ -55,6 +71,7 @@ type locatedImage struct {
 
 type point struct {
 	lat, lon float64
+	time     time.Time
 }
 
 func (p point) MarshalJSON() ([]byte, error) {
@@ -67,7 +84,7 @@ func readGPXTrack(gpxFile *gpx.GPX) []point {
 	for _, track := range gpxFile.Tracks {
 		for _, segment := range track.Segments {
 			for _, p := range segment.Points {
-				points = append(points, point{p.Latitude, p.Longitude})
+				points = append(points, point{p.Latitude, p.Longitude, p.Timestamp})
 			}
 		}
 	}
@@ -75,25 +92,36 @@ func readGPXTrack(gpxFile *gpx.GPX) []point {
 	return points
 }
 
-func loadMatchingImages(api *serveAPI, mapGUID uuid.UUID, gpxData *gpx.GPX) []locatedImage {
-	var document *document.Document
+func findMatchingImages(doc *document.Document, points []point) []locatedImage {
+	var locatedImages []locatedImage
 
-outer:
-	for _, doc := range api.store.Documents {
-		for _, m := range doc.Maps {
-			if m.Resource.GUID == mapGUID {
-				document = doc
-				break outer
+	for _, gal := range doc.Galleries {
+		for _, img := range gal.Images {
+			exifData, err := images.ReadEXIFFromFile(img.FilePath)
+			if err != nil {
+				log.Printf("could not load exif data: %s", err)
+				continue
+			}
+
+			targetTime := exifData.Time.In(time.UTC)
+			nearest, duration := findClosestPointInTime(points, targetTime)
+
+			if duration < 120*time.Second {
+				locatedImages = append(
+					locatedImages,
+					locatedImage{
+						URI:    img.Resource.URI,
+						LatLng: point{lat: nearest.lat, lon: nearest.lon},
+					},
+				)
 			}
 		}
 	}
 
-	if document == nil {
-		return nil
-	}
+	return locatedImages
+}
 
-	fmt.Println("holla!")
-
+func findClosestPointInTime(points []point, targetTime time.Time) (point, time.Duration) {
 	absDuration := func(d time.Duration) time.Duration {
 		if d < 0 {
 			return -d
@@ -101,52 +129,17 @@ outer:
 		return d
 	}
 
-	var locatedImages []locatedImage
-
-	for _, gal := range document.Galleries {
-		for _, img := range gal.Images {
-			exifData, err := images.ReadEXIFFromFile(img.FilePath)
-			if err != nil {
-				log.Printf("could not load exif data: %s", err)
-			}
-
-			ts := exifData.Time
-			var best gpx.GPXPoint
-
-			for _, track := range gpxData.Tracks {
-				for _, segment := range track.Segments {
-					for _, point := range segment.Points {
-						tsPoint := point.Timestamp.In(time.Local)
-						tsBest := best.Timestamp.In(time.Local)
-						diffCurr := absDuration(ts.Sub(tsBest))
-						diffPoint := absDuration(ts.Sub(tsPoint))
-
-						if diffPoint < diffCurr {
-							best = point
-						}
-					}
-				}
-			}
-
-			tsBest := best.Timestamp.In(time.Local)
-			durBest := absDuration(ts.Sub(tsBest))
-
-			if durBest < 120*time.Second {
-				fmt.Printf("best diff: %s\n", durBest)
-				locatedImages = append(
-					locatedImages,
-					locatedImage{
-						URI: img.Resource.URI,
-						LatLng: point{
-							lat: best.Latitude,
-							lon: best.Longitude,
-						},
-					},
-				)
-			}
+	durBest := time.Duration(1 << 62)
+	iBest := 0
+	for i := 0; i < len(points); i++ {
+		durI := absDuration(targetTime.Sub(points[i].time))
+		if durI <= durBest {
+			durBest = durI
+			iBest = i
+		} else {
+			return points[i-1], durBest
 		}
 	}
 
-	fmt.Printf("%#v\n", locatedImages)
-	return locatedImages
+	return points[iBest], durBest
 }
