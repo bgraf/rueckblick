@@ -34,16 +34,17 @@ func (g *Gallery) AppendImage(res Resource, filePath string) {
 }
 
 type Document struct {
-	Path      string            // File system path
-	HTML      *goquery.Document // HTML content
-	GUID      uuid.UUID
-	Title     string
-	Tags      []Tag
-	Date      time.Time
-	Abstract  string
-	Preview   string
-	Galleries []*Gallery
-	Maps      []GXPMap
+	Path           string            // File system path
+	HTML           *goquery.Document // HTML content
+	GUID           uuid.UUID
+	Title          string
+	Tags           []Tag
+	Date           time.Time
+	Abstract       string
+	Preview        string
+	Galleries      []*Gallery
+	Maps           []GXPMap
+	HasFrontmatter bool
 }
 
 func (doc *Document) HasAbstract() bool {

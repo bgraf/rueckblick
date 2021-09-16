@@ -88,7 +88,7 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 			return tagIdentifierEscaped(tag.String())
 		},
 		"tagDisplay": func(tag document.Tag) template.HTML {
-			if tag.HasCategory() {
+			if tag.Category == "location" {
 				return template.HTML(fmt.Sprintf("<i class=\"icon-map-pin-line icon-small\"></i> %s", tag.String()))
 			}
 

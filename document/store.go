@@ -3,24 +3,20 @@ package document
 import (
 	"bytes"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/bgraf/rueckblick/markdown/gallery"
+	"github.com/bgraf/rueckblick/markdown/gpx"
+	"github.com/bgraf/rueckblick/markdown/yamlblock"
+	"github.com/google/uuid"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
-
-	"github.com/PuerkitoBio/goquery"
-	"github.com/bgraf/rueckblick/markdown/gallery"
-	"github.com/bgraf/rueckblick/markdown/gpx"
-	"github.com/bgraf/rueckblick/markdown/yamlblock"
-	"github.com/bgraf/rueckblick/util/slices"
-	"github.com/google/uuid"
-	"github.com/yuin/goldmark"
-	meta "github.com/yuin/goldmark-meta"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
 )
 
 type Store struct {
@@ -176,6 +172,11 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 		Path: path,
 	}
 
+	sourceText, err = readFrontMatter(doc, sourceText)
+	if err != nil {
+		return nil, fmt.Errorf("could not read front matter: %w", err)
+	}
+
 	gpxOpts := &gpx.Options{
 		ProvideSource: func(mapNo int, srcPath string) (string, bool) {
 			res, ok := s.options.MapGPXResource(doc, srcPath)
@@ -218,7 +219,6 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 
 	gmark := goldmark.New(
 		goldmark.WithExtensions(
-			meta.Meta,
 			yamlblock.New(
 				gallery.NewGalleryAddin(galleryOpts),
 				gpx.NewGPXAddin(gpxOpts),
@@ -244,85 +244,5 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 		return nil, fmt.Errorf("could not parse HTML: %w", err)
 	}
 
-	// Extract YAML meta data
-	err = populateFromYAMLMetaData(doc, meta.Get(pc))
-	if err != nil {
-		return nil, fmt.Errorf("could not parse YAML meta data: %w", err)
-	}
-
 	return doc, nil
-}
-
-func populateFromYAMLMetaData(doc *Document, m map[string]interface{}) error {
-	if tags, ok := m["tags"].([]interface{}); ok {
-		rawTags, remaining := slices.PartitionStrings(tags)
-		for _, rawTag := range rawTags {
-			doc.Tags = append(doc.Tags, Tag{Raw: rawTag})
-		}
-
-		for _, r := range remaining {
-			m, ok := r.(map[interface{}]interface{})
-			if !ok {
-				continue
-			}
-
-			for k, v := range m {
-				category, ok := k.(string)
-				if !ok {
-					continue
-				}
-
-				rawItems, ok := v.([]interface{})
-				if !ok {
-					continue
-				}
-
-				rawTags, _ = slices.PartitionStrings(rawItems)
-				for _, rawTag := range rawTags {
-					doc.Tags = append(doc.Tags, Tag{
-						Raw:      rawTag,
-						Category: category,
-					})
-				}
-			}
-		}
-	}
-
-	if title, ok := m["title"].(string); ok {
-		doc.Title = title
-	}
-
-	var err error
-
-	guidProvided := false
-	if guidStr, ok := m["guid"].(string); ok {
-		doc.GUID, err = uuid.Parse(guidStr)
-		if err == nil {
-			guidProvided = true
-		}
-	}
-
-	if !guidProvided {
-		doc.GUID = uuid.New()
-	}
-
-	// TODO: allow for more dates, and date ranges etc..
-	if dateStr, ok := m["date"].(string); ok {
-		doc.Date, err = time.Parse("2006-01-02", dateStr)
-		if err != nil {
-			return fmt.Errorf("could not parse date: %w", err)
-		}
-	} else {
-		return fmt.Errorf("field 'date' missing in YAML meta data")
-	}
-
-	if abstract, ok := m["abstract"].(string); ok {
-		doc.Abstract = strings.TrimSpace(abstract)
-	}
-
-	if preview, ok := m["preview"].(string); ok {
-		doc.Preview = preview
-	}
-
-	return nil
 }
