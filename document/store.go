@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 type Store struct {
@@ -198,7 +199,7 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 	}
 
 	galleryOpts := &gallery.Options{
-		ProvideSource: func(galleryNo int, srcPath string) (string, bool) {
+		ProvideSource: func(galleryNo int, srcPath string, timestamp *time.Time) (string, bool) {
 			res, ok := s.options.MapImageResource(doc, galleryNo, srcPath)
 			if !ok {
 				return "", false
@@ -211,7 +212,7 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 				)
 			}
 
-			doc.Galleries[galleryNo].AppendImage(res, srcPath)
+			doc.Galleries[galleryNo].AppendImage(res, srcPath, timestamp)
 
 			return res.URI, true
 		},

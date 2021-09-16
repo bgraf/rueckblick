@@ -3,11 +3,9 @@ package serve
 import (
 	"encoding/json"
 	"github.com/bgraf/rueckblick/document"
-	"github.com/bgraf/rueckblick/images"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/tkrajina/gpxgo/gpx"
-	"log"
 	"net/http"
 	"time"
 )
@@ -97,13 +95,10 @@ func findMatchingImages(doc *document.Document, points []point) []locatedImage {
 
 	for _, gal := range doc.Galleries {
 		for _, img := range gal.Images {
-			exifData, err := images.ReadEXIFFromFile(img.FilePath)
-			if err != nil {
-				log.Printf("could not load exif data: %s", err)
+			if img.Timestamp == nil {
 				continue
 			}
-
-			targetTime := exifData.Time.In(time.UTC)
+			targetTime := *img.Timestamp
 			nearest, duration := findClosestPointInTime(points, targetTime)
 
 			if duration < 120*time.Second {

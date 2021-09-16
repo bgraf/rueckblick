@@ -68,7 +68,7 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 	_, _ = w.WriteString("\">")
 
 	for _, file := range filesExif {
-		resPath, ok := g.options.ProvideSource(node.count, file.path)
+		resPath, ok := g.options.ProvideSource(node.count, file.path, file.exif.Time)
 		if !ok {
 			continue
 		}

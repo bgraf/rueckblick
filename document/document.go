@@ -14,8 +14,9 @@ type GXPMap struct {
 }
 
 type Image struct {
-	FilePath string
-	Resource Resource
+	FilePath  string
+	Resource  Resource
+	Timestamp *time.Time
 }
 
 type Gallery struct {
@@ -23,12 +24,13 @@ type Gallery struct {
 	Images    []Image
 }
 
-func (g *Gallery) AppendImage(res Resource, filePath string) {
+func (g *Gallery) AppendImage(res Resource, filePath string, timestamp *time.Time) {
 	g.Images = append(
 		g.Images,
 		Image{
-			FilePath: filePath,
-			Resource: res,
+			FilePath:  filePath,
+			Resource:  res,
+			Timestamp: timestamp,
 		},
 	)
 }
@@ -44,7 +46,7 @@ type Document struct {
 	Preview        string
 	Galleries      []*Gallery
 	Maps           []GXPMap
-	HasFrontmatter bool
+	HasFrontMatter bool
 }
 
 func (doc *Document) HasAbstract() bool {

@@ -2,6 +2,7 @@ package gallery
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bgraf/rueckblick/markdown/yamlblock"
 	"github.com/yuin/goldmark/parser"
@@ -22,7 +23,7 @@ func ElementID(number int) string {
 }
 
 type Options struct {
-	ProvideSource func(galleryNo int, srcPath string) (string, bool)
+	ProvideSource func(galleryNo int, srcPath string, timestamp *time.Time) (string, bool)
 }
 
 type GalleryAddin struct {

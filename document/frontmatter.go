@@ -55,7 +55,7 @@ func readFrontMatter(doc *Document, source []byte) ([]byte, error) {
 		}
 	}
 
-	doc.HasFrontmatter = true
+	doc.HasFrontMatter = true
 
 	return mdSource, nil
 }
