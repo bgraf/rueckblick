@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -116,8 +117,23 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 		},
 	})
 
-	r.LoadHTMLGlob("./res/templates/*")
-	r.Static("/static", "./res/static")
+	// Load templates and static files
+	resourceDir, err := cmd.Flags().GetString("resource-dir")
+	if err != nil {
+		panic(err)
+	}
+
+	if resourceDir == "" {
+		exePath, err := os.Executable()
+		if err != nil {
+			return fmt.Errorf("exe name lookup: %w", err)
+		}
+		fmt.Printf("exe: %s\n", exePath)
+		resourceDir = filepath.Dir(exePath)
+	}
+
+	r.LoadHTMLGlob(filepath.Join(resourceDir, "res/templates/*"))
+	r.Static("/static", filepath.Join(resourceDir, "res/static"))
 
 	if err = r.Run(":8000"); err != nil {
 		log.Fatal(err)
