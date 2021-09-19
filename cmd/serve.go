@@ -21,4 +21,11 @@ func init() {
 		"",
 		"Directory containing templates and static files",
 	)
+
+	serveCmd.Flags().IntP(
+		"port",
+		"P",
+		8000,
+		"HTTP port",
+	)
 }

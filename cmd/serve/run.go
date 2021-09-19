@@ -135,7 +135,15 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 	r.LoadHTMLGlob(filepath.Join(resourceDir, "res/templates/*"))
 	r.Static("/static", filepath.Join(resourceDir, "res/static"))
 
-	if err = r.Run(":8000"); err != nil {
+	// Run
+	port, err := cmd.Flags().GetInt("port")
+	if err != nil {
+		panic(err)
+	}
+
+	connStr := fmt.Sprintf(":%d", port)
+
+	if err = r.Run(connStr); err != nil {
 		log.Fatal(err)
 	}
 
