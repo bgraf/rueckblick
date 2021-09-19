@@ -20,7 +20,7 @@ type FrontMatter struct {
 }
 
 func readFrontMatter(doc *Document, source []byte) ([]byte, error) {
-	fmSource, mdSource, err := findFrontMatterSource(source)
+	fmSource, mdSource, err := SplitFrontMatterSource(source)
 	if err != nil {
 		return source, fmt.Errorf("read front matter: %w", err)
 	}
@@ -85,7 +85,7 @@ func (t YamlDate) MarshalYAML() (interface{}, error) {
 	return ret, nil
 }
 
-func findFrontMatterSource(source []byte) ([]byte, []byte, error) {
+func SplitFrontMatterSource(source []byte) ([]byte, []byte, error) {
 	nSkipWhite := util.FirstNonSpacePosition(source)
 	if !startsWithFrontMatterMarker(source[nSkipWhite:]) {
 		// Assume no front-matter
