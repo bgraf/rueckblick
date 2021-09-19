@@ -9,21 +9,23 @@ import (
 	"time"
 )
 
+type FrontMatter struct {
+	Title    string              `yaml:"title"`
+	Date     YamlDate            `yaml:"date"`
+	Author   string              `yaml:"author"`
+	Preview  string              `yaml:"preview,omitempty"`
+	Abstract string              `yaml:"abstract,omitempty"`
+	GUID     uuid.UUID           `yaml:"guid,omitempty"`
+	Tags     map[string][]string `yaml:"tags,omitempty"`
+}
+
 func readFrontMatter(doc *Document, source []byte) ([]byte, error) {
 	fmSource, mdSource, err := findFrontMatterSource(source)
 	if err != nil {
 		return source, fmt.Errorf("read front matter: %w", err)
 	}
 
-	fm := struct {
-		Title    string              `yaml:"title"`
-		Date     yamlDate            `yaml:"date"`
-		Author   string              `yaml:"author"`
-		Preview  string              `yaml:"preview"`
-		Abstract string              `yaml:"abstract"`
-		GUID     uuid.UUID           `yaml:"guid"`
-		Tags     map[string][]string `yaml:"tags"`
-	}{}
+	fm := FrontMatter{}
 
 	err = yaml.Unmarshal(fmSource, &fm)
 	if err != nil {
@@ -60,9 +62,9 @@ func readFrontMatter(doc *Document, source []byte) ([]byte, error) {
 	return mdSource, nil
 }
 
-type yamlDate time.Time
+type YamlDate time.Time
 
-func (t *yamlDate) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (t *YamlDate) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var txt string
 	err := unmarshal(&txt)
 	if err != nil {
@@ -74,8 +76,13 @@ func (t *yamlDate) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	*t = yamlDate(date)
+	*t = YamlDate(date)
 	return nil
+}
+
+func (t YamlDate) MarshalYAML() (interface{}, error) {
+	ret := time.Time(t).Format("2006-01-02")
+	return ret, nil
 }
 
 func findFrontMatterSource(source []byte) ([]byte, []byte, error) {

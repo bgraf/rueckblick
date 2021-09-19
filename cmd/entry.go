@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/bgraf/rueckblick/document"
+	"github.com/google/uuid"
 	"log"
 	"os"
 	"path/filepath"
@@ -146,27 +148,13 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	normTitle := normalizeTitle(title)
 	entryDirName := fmt.Sprintf("%s-%s", dateStr, normTitle)
 	entryDir := filepath.Join(journalDir, fmt.Sprint(date.Year()), entryDirName)
-	entrFileName := fmt.Sprintf("%s.md", dateStr)
-	entryFile := filepath.Join(entryDir, entrFileName)
+	entryFileName := fmt.Sprintf("%s.md", dateStr)
+	entryFile := filepath.Join(entryDir, entryFileName)
 
 	log.Printf("entry directory: %s", entryDir)
 	log.Printf("entry file: %s", entryFile)
 
-	// Create entry directory
-	err = os.MkdirAll(entryDir, 0700)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Create markdown file
-	f, err := os.Create(entryFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	// Write front-matter
-	fmt.Fprintln(f, "---")
+	// Setup front matter
 
 	var tagMap map[string][]string
 	nTags := len(tags) + len(locations)
@@ -180,17 +168,36 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	frontMatter := struct {
-		Title   string              `yaml:"title"`
-		DateStr string              `yaml:"date"`
-		Author  string              `yaml:"author"`
-		Tags    map[string][]string `yaml:"tags,omitempty"`
-	}{
-		Title:   title,
-		DateStr: dateStr,
-		Author:  author,
-		Tags:    tagMap,
+	guid, err := uuid.NewRandom()
+	if err != nil {
+		return fmt.Errorf("generate UUID: %w", err)
 	}
+
+	fmt.Println("date:", date)
+	frontMatter := document.FrontMatter{
+		Title:  title,
+		Date:   document.YamlDate(date),
+		Author: author,
+		GUID:   guid,
+		Tags:   tagMap,
+	}
+
+	// Create entry directory
+	err = os.MkdirAll(entryDir, 0700)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create markdown file
+	f, err := os.Create(entryFile)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	// Write front-matter
+	fmt.Fprintln(f, "---")
 
 	enc := yaml.NewEncoder(f)
 	err = enc.Encode(frontMatter)
