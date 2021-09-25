@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -10,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/spf13/cobra"
 )
 
 // galleryCmd represents the gallery command
@@ -74,7 +75,7 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 	// Gather all image files
 	filePaths, err := gatherFiles(args, []string{".jpeg", ".jpg"})
 	if err != nil {
-		return fmt.Errorf("scanning files: %w\n", err)
+		return fmt.Errorf("scanning files: %w", err)
 	} else if len(filePaths) == 0 {
 		return fmt.Errorf("no files")
 	}
