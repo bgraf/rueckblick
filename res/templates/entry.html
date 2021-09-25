@@ -7,6 +7,9 @@
         <h1>{{ .Document.Title }}</h1>
     </div>
 </div>
+<div class="abstract">
+    {{ if .Document.HasAbstract }} {{ .Document.Abstract }} {{ end }}
+</div>
 <div class="tag-icon-bar">
     <div class="tag-bar">
         {{template "tagbar" .Document.Tags}}

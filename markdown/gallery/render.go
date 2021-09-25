@@ -2,6 +2,7 @@ package gallery
 
 import (
 	"sort"
+	"time"
 
 	"log"
 
@@ -68,7 +69,11 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 	_, _ = w.WriteString("\">")
 
 	for _, file := range filesExif {
-		resPath, ok := g.options.ProvideSource(node.count, file.path, file.exif.Time)
+		t := &time.Time{}
+		if file.exif != nil {
+			t = file.exif.Time
+		}
+		resPath, ok := g.options.ProvideSource(node.count, file.path, t)
 		if !ok {
 			continue
 		}
