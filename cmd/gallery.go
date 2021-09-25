@@ -165,6 +165,7 @@ func scaleImage(src string, dst string, maxSize int) error {
 	cmd := exec.Command(
 		"convert",
 		src,
+		"-auto-orient",
 		"-resize",
 		fmt.Sprintf("%dx%d", maxSize, maxSize),
 		dst,
