@@ -62,19 +62,42 @@ func init() {
 	// TODO: bind to config file value
 }
 
+type genGalleryOptions struct {
+	Size            int
+	OutputDirectory string
+	Args            []string
+}
+
+func defaultGenGalleryOptions() genGalleryOptions {
+	return genGalleryOptions{
+		Size:            2000,
+		OutputDirectory: "photos",
+	}
+}
+
 func runGenGallery(cmd *cobra.Command, args []string) error {
-	maxSize, err := cmd.Flags().GetInt("size")
+	var err error
+
+	opts := defaultGenGalleryOptions()
+
+	opts.Size, err = cmd.Flags().GetInt("size")
 	if err != nil {
 		panic(err) // Should not happen
 	}
 
-	outputDir, err := cmd.Flags().GetString("output")
+	opts.OutputDirectory, err = cmd.Flags().GetString("output")
 	if err != nil {
 		panic(err) // Should not happen
 	}
 
+	opts.Args = args
+
+	return genGallery(opts)
+}
+
+func genGallery(opts genGalleryOptions) error {
 	// Gather all image files
-	filePaths, err := gatherFiles(args, []string{".jpeg", ".jpg"})
+	filePaths, err := gatherFiles(opts.Args, []string{".jpeg", ".jpg"})
 	if err != nil {
 		return fmt.Errorf("scanning files: %w", err)
 	} else if len(filePaths) == 0 {
@@ -82,7 +105,7 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create output directory
-	err = os.MkdirAll(outputDir, 0700)
+	err = os.MkdirAll(opts.OutputDirectory, 0700)
 	if err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
@@ -101,9 +124,9 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 				pathWithoutExt := strings.TrimSuffix(path, srcExt)
 				nameWithoutExt := filepath.Base(pathWithoutExt)
 				dstExt := destinationImageExtension(srcExt)
-				dstPath := filepath.Join(outputDir, nameWithoutExt+dstExt)
+				dstPath := filepath.Join(opts.OutputDirectory, nameWithoutExt+dstExt)
 
-				err = scaleImage(path, dstPath, maxSize)
+				err = scaleImage(path, dstPath, opts.Size)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %s\n", err)
 				}
@@ -121,7 +144,7 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 
 	wg.Wait()
 
-	if err := addGalleryToDocument(outputDir); err != nil {
+	if err := addGalleryToDocument(opts.OutputDirectory); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: add to document: %s\n", err)
 	}
 
