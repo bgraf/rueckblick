@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -120,6 +121,10 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 
 	wg.Wait()
 
+	if err := addGalleryToDocument(outputDir); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: add to document: %s\n", err)
+	}
+
 	fmt.Println("done")
 
 	return nil
@@ -209,4 +214,66 @@ func gatherFiles(roots []string, extensions []string) ([]string, error) {
 	}
 
 	return paths, nil
+}
+
+func addGalleryToDocument(galleryOutputDirectory string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("could not determine current working directory: %w", err)
+	}
+
+	galleryRelPath := galleryOutputDirectory
+	if filepath.IsAbs(galleryOutputDirectory) {
+		galleryRelPath, err = filepath.Rel(cwd, galleryOutputDirectory)
+		if err != nil {
+			return fmt.Errorf("obtain relative path: %w", err)
+		}
+	}
+
+	// Find possible document file
+	files, err := filepath.Glob(filepath.Join(cwd, "*.md"))
+	if err != nil {
+		return fmt.Errorf("glob: %w", err)
+	}
+
+	if len(files) != 1 {
+		return fmt.Errorf("zero or multiple markdown files in current working directory")
+	}
+
+	file := files[0]
+
+	// Ask whether to append to gallery
+	{
+		prompt := &survey.Confirm{
+			Message: fmt.Sprintf("Append gallery to document (%s)", file),
+			Default: false,
+		}
+
+		var shouldContinue bool
+		err := survey.AskOne(prompt, &shouldContinue, nil)
+		if err != nil {
+			return err
+		}
+
+		if !shouldContinue {
+			return nil
+		}
+	}
+
+	// Open document for appending
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("open document: %w", err)
+	}
+
+	defer func() { _ = f.Close() }()
+
+	// Append to document file
+	fmt.Fprintln(f, "\n:: gallery ---")
+	if galleryRelPath != "photos" {
+		fmt.Fprintf(f, "path: %s\n", galleryRelPath)
+	}
+	fmt.Fprintln(f, "---")
+
+	return nil
 }

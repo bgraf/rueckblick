@@ -193,7 +193,10 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 	// Review front matter
 	{
-		writeFrontMatter(os.Stdout, frontMatter)
+		err := writeFrontMatter(os.Stdout, frontMatter)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		isConfirmed := true
 
@@ -202,7 +205,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 			Default: isConfirmed,
 		}
 
-		err := survey.AskOne(prompt, &isConfirmed)
+		err = survey.AskOne(prompt, &isConfirmed)
 		exitOnInterrupt(err)
 
 		if !isConfirmed {
@@ -218,14 +221,15 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 	// Create markdown file
 	f, err := os.Create(entryFile)
-
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 
-	writeFrontMatter(f, frontMatter)
-	fmt.Fprintf(f, "\nHello!\n")
+	err = writeFrontMatter(f, frontMatter)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Finish
 	log.Print("created entry")
