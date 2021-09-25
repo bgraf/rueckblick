@@ -224,22 +224,11 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	}
 	defer f.Close()
 
-	// Write front-matter
-	fmt.Fprintln(f, "---")
-
-	enc := yaml.NewEncoder(f)
-	err = enc.Encode(frontMatter)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Fprintln(f, "---")
-
+	writeFrontMatter(f, frontMatter)
 	fmt.Fprintf(f, "\nHello!\n")
 
 	// Finish
 	log.Print("created entry")
-
 	fmt.Printf("== Change to entry directory ==\n\ncd %s\n\n", entryDir)
 
 	return nil
