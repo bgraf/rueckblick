@@ -3,14 +3,15 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/bgraf/rueckblick/document"
-	"gopkg.in/yaml.v2"
 	"image"
 	"image/jpeg"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/bgraf/rueckblick/document"
+	"gopkg.in/yaml.v2"
 
 	"github.com/disintegration/imaging"
 	"github.com/spf13/cobra"
@@ -95,12 +96,13 @@ func includeInFrontMatter(cwd string, outputFilePath string) error {
 	file := files[0]
 
 	{
+		shouldContinue := true
+
 		prompt := &survey.Confirm{
 			Message: fmt.Sprintf("Add preview to front matter (%s)", file),
-			Default: false,
+			Default: shouldContinue,
 		}
 
-		var shouldContinue bool
 		err := survey.AskOne(prompt, &shouldContinue, nil)
 		if err != nil {
 			return err

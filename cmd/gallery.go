@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -63,9 +64,10 @@ func init() {
 }
 
 type genGalleryOptions struct {
-	Size            int
-	OutputDirectory string
-	Args            []string
+	Size              int
+	OutputDirectory   string
+	Args              []string
+	DocumentDirectory string
 }
 
 func defaultGenGalleryOptions() genGalleryOptions {
@@ -82,12 +84,17 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 
 	opts.Size, err = cmd.Flags().GetInt("size")
 	if err != nil {
-		panic(err) // Should not happen
+		log.Fatal(err) // Should not happen
 	}
 
 	opts.OutputDirectory, err = cmd.Flags().GetString("output")
 	if err != nil {
-		panic(err) // Should not happen
+		log.Fatal(err) // Should not happen
+	}
+
+	opts.DocumentDirectory, err = os.Getwd()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	opts.Args = args
@@ -144,7 +151,8 @@ func genGallery(opts genGalleryOptions) error {
 
 	wg.Wait()
 
-	if err := addGalleryToDocument(opts.OutputDirectory); err != nil {
+	// Add to document if the user wants
+	if err := addGalleryToDocument(opts); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: add to document: %s\n", err)
 	}
 
@@ -239,22 +247,20 @@ func gatherFiles(roots []string, extensions []string) ([]string, error) {
 	return paths, nil
 }
 
-func addGalleryToDocument(galleryOutputDirectory string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("could not determine current working directory: %w", err)
-	}
+func addGalleryToDocument(opts genGalleryOptions) error {
+	var err error
 
-	galleryRelPath := galleryOutputDirectory
-	if filepath.IsAbs(galleryOutputDirectory) {
-		galleryRelPath, err = filepath.Rel(cwd, galleryOutputDirectory)
+	// Make gallery path relative to document directory
+	galleryRelPath := opts.OutputDirectory
+	if filepath.IsAbs(opts.OutputDirectory) {
+		galleryRelPath, err = filepath.Rel(opts.DocumentDirectory, opts.OutputDirectory)
 		if err != nil {
 			return fmt.Errorf("obtain relative path: %w", err)
 		}
 	}
 
 	// Find possible document file
-	files, err := filepath.Glob(filepath.Join(cwd, "*.md"))
+	files, err := filepath.Glob(filepath.Join(opts.DocumentDirectory, "*.md"))
 	if err != nil {
 		return fmt.Errorf("glob: %w", err)
 	}
@@ -267,12 +273,13 @@ func addGalleryToDocument(galleryOutputDirectory string) error {
 
 	// Ask whether to append to gallery
 	{
+		shouldContinue := true
+
 		prompt := &survey.Confirm{
 			Message: fmt.Sprintf("Append gallery to document (%s)", file),
-			Default: false,
+			Default: shouldContinue,
 		}
 
-		var shouldContinue bool
 		err := survey.AskOne(prompt, &shouldContinue, nil)
 		if err != nil {
 			return err

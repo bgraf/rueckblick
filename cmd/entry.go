@@ -29,6 +29,8 @@ var entryCmd = &cobra.Command{
 
 func init() {
 	genCmd.AddCommand(entryCmd)
+
+	entryCmd.Flags().StringP("photos-dir", "p", "", "Generate a gallery from the photos in the photo directory")
 }
 
 func runGenEntry(cmd *cobra.Command, args []string) error {
@@ -233,6 +235,29 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 	// Finish
 	log.Print("created entry")
+
+	// Generate a gallery if requested by user
+	{
+		photosDir, err := cmd.Flags().GetString("photos-dir")
+		if err != nil {
+			panic(err) // should not happen
+		}
+
+		if len(strings.TrimSpace(photosDir)) > 0 {
+			log.Printf("generating gallery from photos-dir: %s\n", photosDir)
+
+			opts := defaultGenGalleryOptions()
+			opts.Args = []string{photosDir}
+			opts.DocumentDirectory = entryDir
+			opts.OutputDirectory = filepath.Join(opts.DocumentDirectory, opts.OutputDirectory)
+
+			err := genGallery(opts)
+			if err != nil {
+				log.Printf("Warning: could not generated gallery: %s\n", err)
+			}
+		}
+	}
+
 	fmt.Printf("== Change to entry directory ==\n\ncd %s\n\n", entryDir)
 
 	return nil
