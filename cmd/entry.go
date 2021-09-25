@@ -2,14 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/bgraf/rueckblick/document"
-	"github.com/google/uuid"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/bgraf/rueckblick/document"
+	"github.com/google/uuid"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -120,6 +122,18 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	var abstract string
+	{
+		prompt := survey.Input{
+			Message: "Abstract (optional)",
+		}
+
+		err := survey.AskOne(&prompt, &abstract)
+		exitOnInterrupt(err)
+
+		abstract = strings.TrimSpace(abstract)
+	}
+
 	author := os.Getenv("USER")
 	{
 		prompt := survey.Input{
@@ -132,11 +146,6 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		)
 		exitOnInterrupt(err)
 	}
-
-	fmt.Println("date: ", dateStr)
-	fmt.Println("title: ", title)
-	fmt.Println("author: ", author)
-	fmt.Printf("Tags: %v\n", tags)
 
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
@@ -173,13 +182,32 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("generate UUID: %w", err)
 	}
 
-	fmt.Println("date:", date)
 	frontMatter := document.FrontMatter{
-		Title:  title,
-		Date:   document.YamlDate(date),
-		Author: author,
-		GUID:   guid,
-		Tags:   tagMap,
+		Title:    title,
+		Date:     document.YamlDate(date),
+		Author:   author,
+		GUID:     guid,
+		Tags:     tagMap,
+		Abstract: abstract,
+	}
+
+	// Review front matter
+	{
+		writeFrontMatter(os.Stdout, frontMatter)
+
+		isConfirmed := true
+
+		prompt := &survey.Confirm{
+			Message: "Proceed",
+			Default: isConfirmed,
+		}
+
+		err := survey.AskOne(prompt, &isConfirmed)
+		exitOnInterrupt(err)
+
+		if !isConfirmed {
+			os.Exit(0)
+		}
 	}
 
 	// Create entry directory
@@ -213,6 +241,20 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	log.Print("created entry")
 
 	fmt.Printf("== Change to entry directory ==\n\ncd %s\n\n", entryDir)
+
+	return nil
+}
+
+func writeFrontMatter(f io.Writer, fm document.FrontMatter) error {
+	fmt.Fprintln(f, "---")
+
+	enc := yaml.NewEncoder(f)
+	err := enc.Encode(fm)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintln(f, "---")
 
 	return nil
 }
