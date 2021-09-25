@@ -102,7 +102,7 @@ func genPreview(opts genPreviewOptions) error {
 	fmt.Printf("Created %dx%d preview image '%s'\n", opts.Size, opts.Size, outImagePath)
 
 	{
-		err = includeInFrontMatter(opts.DocumentDirectory, opts.TargetImagePath)
+		err = includeInFrontMatter(opts.DocumentDirectory, outImagePath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to include into front matter: %s\n", err)
 		}

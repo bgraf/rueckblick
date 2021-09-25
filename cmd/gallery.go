@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/bgraf/rueckblick/cmd/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -153,13 +152,9 @@ func genGallery(opts genGalleryOptions) error {
 	wg.Wait()
 
 	// Add to document if the user wants
-	/*
-		if err := addGalleryToDocument(opts); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: add to document: %s\n", err)
-		}
-	*/
-
-	tools.FehSelectImage(opts.TargetGalleryDirectory)
+	if err := addGalleryToDocument(opts); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: add to document: %s\n", err)
+	}
 
 	fmt.Println("done")
 

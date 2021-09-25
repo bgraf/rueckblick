@@ -46,7 +46,9 @@ func FehSelectImage(directory string) (string, error) {
 
 	err = cmd.Wait()
 	if err != nil {
-		return resultPath, err
+		if _, ok := err.(*exec.ExitError); !ok {
+			return resultPath, err
+		}
 	}
 
 	return resultPath, nil

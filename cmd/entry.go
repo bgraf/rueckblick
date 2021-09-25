@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/bgraf/rueckblick/cmd/tools"
 	"github.com/bgraf/rueckblick/document"
 	"github.com/google/uuid"
 
@@ -245,13 +246,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 		if len(strings.TrimSpace(photosDir)) > 0 {
 			log.Printf("generating gallery from photos-dir: %s\n", photosDir)
-
-			opts := defaultGenGalleryOptions()
-			opts.Args = []string{photosDir}
-			opts.DocumentDirectory = entryDir
-			opts.TargetGalleryDirectory = filepath.Join(opts.DocumentDirectory, opts.TargetGalleryDirectory)
-
-			err := genGallery(opts)
+			err := generateGallery(photosDir, entryDir)
 			if err != nil {
 				log.Printf("Warning: could not generated gallery: %s\n", err)
 			}
@@ -261,6 +256,49 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	fmt.Printf("== Change to entry directory ==\n\ncd %s\n\n", entryDir)
 
 	return nil
+}
+
+func generateGallery(photosDirectory string, documentDirectory string) error {
+	opts := defaultGenGalleryOptions()
+	opts.Args = []string{photosDirectory}
+	opts.DocumentDirectory = documentDirectory
+	opts.TargetGalleryDirectory = filepath.Join(opts.DocumentDirectory, opts.TargetGalleryDirectory)
+
+	if err := genGallery(opts); err != nil {
+		return err
+	}
+
+	// Generate preview too?
+	prompt := &survey.Confirm{
+		Message: "Select a preview image",
+		Default: true,
+	}
+
+	isConfirmed := true
+	err := survey.AskOne(prompt, &isConfirmed)
+	exitOnInterrupt(err)
+
+	if isConfirmed {
+		err = generatePreview(documentDirectory, opts.TargetGalleryDirectory)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func generatePreview(documentDirectory string, galleryDirectory string) error {
+	sourceImage, err := tools.FehSelectImage(galleryDirectory)
+	if err != nil {
+		return err
+	}
+
+	opts := defaultGenPreviewOptions()
+	opts.DocumentDirectory = documentDirectory
+	opts.SourceImagePath = sourceImage
+
+	return genPreview(opts)
 }
 
 func writeFrontMatter(f io.Writer, fm document.FrontMatter) error {
