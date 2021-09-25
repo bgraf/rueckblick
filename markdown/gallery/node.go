@@ -15,6 +15,7 @@ type galleryNode struct {
 
 func (g *galleryNode) findImagePaths() ([]string, error) {
 	docDir := filepath.Dir(g.documentPath)
+
 	pat := filepath.Join(docDir, g.Path, g.Include)
 
 	candidates, err := filepath.Glob(pat)

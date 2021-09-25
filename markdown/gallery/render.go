@@ -2,6 +2,7 @@ package gallery
 
 import (
 	"sort"
+	"strings"
 	"time"
 
 	"log"
@@ -18,6 +19,8 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 	}
 
 	node := object.(*galleryNode)
+	addDefaultValues(node)
+
 	files, err := node.findImagePaths()
 	if err != nil {
 		return ast.WalkStop, err
@@ -96,4 +99,17 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 	_, _ = w.WriteString("</div>")
 
 	return ast.WalkSkipChildren, nil
+}
+
+func addDefaultValues(g *galleryNode) {
+	// If include isn't set, assume all JPGs.
+	g.Include = strings.TrimSpace(g.Include)
+	if len(g.Include) == 0 {
+		g.Include = "*.jpg"
+	}
+
+	// If no path is set, assume 'photos'
+	if len(g.Path) == 0 {
+		g.Path = "photos"
+	}
 }
