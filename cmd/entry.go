@@ -249,7 +249,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 			opts := defaultGenGalleryOptions()
 			opts.Args = []string{photosDir}
 			opts.DocumentDirectory = entryDir
-			opts.OutputDirectory = filepath.Join(opts.DocumentDirectory, opts.OutputDirectory)
+			opts.TargetGalleryDirectory = filepath.Join(opts.DocumentDirectory, opts.TargetGalleryDirectory)
 
 			err := genGallery(opts)
 			if err != nil {

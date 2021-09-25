@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/bgraf/rueckblick/cmd/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -64,16 +65,16 @@ func init() {
 }
 
 type genGalleryOptions struct {
-	Size              int
-	OutputDirectory   string
-	Args              []string
-	DocumentDirectory string
+	Size                   int
+	TargetGalleryDirectory string
+	Args                   []string
+	DocumentDirectory      string
 }
 
 func defaultGenGalleryOptions() genGalleryOptions {
 	return genGalleryOptions{
-		Size:            2000,
-		OutputDirectory: "photos",
+		Size:                   2000,
+		TargetGalleryDirectory: "photos",
 	}
 }
 
@@ -87,7 +88,7 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 		log.Fatal(err) // Should not happen
 	}
 
-	opts.OutputDirectory, err = cmd.Flags().GetString("output")
+	opts.TargetGalleryDirectory, err = cmd.Flags().GetString("output")
 	if err != nil {
 		log.Fatal(err) // Should not happen
 	}
@@ -112,7 +113,7 @@ func genGallery(opts genGalleryOptions) error {
 	}
 
 	// Create output directory
-	err = os.MkdirAll(opts.OutputDirectory, 0700)
+	err = os.MkdirAll(opts.TargetGalleryDirectory, 0700)
 	if err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
@@ -131,7 +132,7 @@ func genGallery(opts genGalleryOptions) error {
 				pathWithoutExt := strings.TrimSuffix(path, srcExt)
 				nameWithoutExt := filepath.Base(pathWithoutExt)
 				dstExt := destinationImageExtension(srcExt)
-				dstPath := filepath.Join(opts.OutputDirectory, nameWithoutExt+dstExt)
+				dstPath := filepath.Join(opts.TargetGalleryDirectory, nameWithoutExt+dstExt)
 
 				err = scaleImage(path, dstPath, opts.Size)
 				if err != nil {
@@ -152,9 +153,13 @@ func genGallery(opts genGalleryOptions) error {
 	wg.Wait()
 
 	// Add to document if the user wants
-	if err := addGalleryToDocument(opts); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: add to document: %s\n", err)
-	}
+	/*
+		if err := addGalleryToDocument(opts); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: add to document: %s\n", err)
+		}
+	*/
+
+	tools.FehSelectImage(opts.TargetGalleryDirectory)
 
 	fmt.Println("done")
 
@@ -252,9 +257,9 @@ func addGalleryToDocument(opts genGalleryOptions) error {
 	var err error
 
 	// Make gallery path relative to document directory
-	galleryRelPath := opts.OutputDirectory
-	if filepath.IsAbs(opts.OutputDirectory) {
-		galleryRelPath, err = filepath.Rel(opts.DocumentDirectory, opts.OutputDirectory)
+	galleryRelPath := opts.TargetGalleryDirectory
+	if filepath.IsAbs(opts.TargetGalleryDirectory) {
+		galleryRelPath, err = filepath.Rel(opts.DocumentDirectory, opts.TargetGalleryDirectory)
 		if err != nil {
 			return fmt.Errorf("obtain relative path: %w", err)
 		}

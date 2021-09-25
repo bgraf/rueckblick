@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/jpeg"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -26,16 +27,48 @@ and are displayed on index pages, tag pages etc.`,
 	RunE: runPreview,
 }
 
-var previewImageWidth *int
+type genPreviewOptions struct {
+	SourceImagePath   string
+	TargetImagePath   string
+	DocumentDirectory string
+	Size              int
+}
+
+func defaultGenPreviewOptions() genPreviewOptions {
+	return genPreviewOptions{
+		Size:            600,
+		TargetImagePath: "preview.jpg",
+	}
+}
 
 func runPreview(cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("input image required")
 	}
 
-	inputFilePath := args[0]
+	var err error
 
-	f, err := os.Open(inputFilePath)
+	opts := defaultGenPreviewOptions()
+	opts.SourceImagePath = args[0]
+
+	opts.TargetImagePath = cmd.Flag("output").Value.String()
+	opts.Size, err = cmd.Flags().GetInt("size")
+	if err != nil {
+		log.Fatal(err) // should not happen
+	}
+
+	opts.DocumentDirectory, err = os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not determine current working directory\n")
+		os.Exit(1)
+	}
+
+	return genPreview(opts)
+}
+
+func genPreview(opts genPreviewOptions) error {
+	// Read image
+	f, err := os.Open(opts.SourceImagePath)
 	if err != nil {
 		return err
 	}
@@ -46,33 +79,30 @@ func runPreview(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("image decode failed: %w", err)
 	}
 
-	outputFilePath := cmd.Flag("output").Value.String()
-	width := *previewImageWidth
-	previewImg := imaging.Fill(img, width, width, imaging.Center, imaging.Lanczos)
+	previewImg := imaging.Fill(img, opts.Size, opts.Size, imaging.Center, imaging.Lanczos)
 
-	fOut, err := os.Create(outputFilePath)
+	outImagePath := opts.TargetImagePath
+	if !filepath.IsAbs(outImagePath) {
+		outImagePath = filepath.Join(opts.DocumentDirectory, opts.TargetImagePath)
+	}
+
+	fOut, err := os.Create(outImagePath)
 	if err != nil {
 		return fmt.Errorf("could not create output image: %w", err)
 	}
 
 	defer fOut.Close()
 
-	opts := jpeg.Options{Quality: 95}
-	err = jpeg.Encode(fOut, previewImg, &opts)
+	jpegOpts := jpeg.Options{Quality: 95}
+	err = jpeg.Encode(fOut, previewImg, &jpegOpts)
 	if err != nil {
 		return fmt.Errorf("saving preview image failed: %w", err)
 	}
 
-	fmt.Printf("Created %dx%d preview image '%s'\n", width, width, outputFilePath)
+	fmt.Printf("Created %dx%d preview image '%s'\n", opts.Size, opts.Size, outImagePath)
 
 	{
-		cwd, err := os.Getwd()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not determine current working directory\n")
-			os.Exit(1)
-		}
-
-		err = includeInFrontMatter(cwd, outputFilePath)
+		err = includeInFrontMatter(opts.DocumentDirectory, opts.TargetImagePath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to include into front matter: %s\n", err)
 		}
@@ -202,5 +232,5 @@ func init() {
 	genCmd.AddCommand(previewCmd)
 
 	previewCmd.Flags().StringP("output", "o", "preview.jpg", "Output filename")
-	previewImageWidth = previewCmd.Flags().IntP("size", "s", 600, "Preview image width, height")
+	previewCmd.Flags().IntP("size", "s", 600, "Preview image width, height")
 }
