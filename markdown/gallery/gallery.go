@@ -49,6 +49,8 @@ func (g *GalleryAddin) Make(pc parser.Context) interface{} {
 	return &galleryNode{
 		documentPath: path,
 		count:        getAndIncreaseGalleryCount(pc),
+		Path:         "photos",
+		Include:      "*.jpg",
 	}
 }
 
