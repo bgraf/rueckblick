@@ -337,6 +337,22 @@ a:hover {
     display: inline-block;
 }
 
+.icon-arrow-s-left {
+    background-image: url(/static/icon/arrow-left-s-line.svg);
+    background-size: contain;
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+}
+
+.icon-arrow-s-right {
+    background-image: url(/static/icon/arrow-right-s-line.svg);
+    background-size: contain;
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+}
+
 .icon-map {
     background-image: url(/static/icon/map-2-line.svg);
     background-size: contain;
@@ -456,6 +472,7 @@ a:hover {
     display: flex;
     justify-content: center;
     align-items: center;
+    column-gap: 20px;
 
     margin-bottom: 10px;
 }

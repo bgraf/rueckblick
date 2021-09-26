@@ -323,6 +323,8 @@ func (api *serveAPI) ServeCalendar(c *gin.Context) {
 	currMonth := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
 	prevMonth := currMonth.AddDate(0, -1, 0)
 	nextMonth := currMonth.AddDate(0, 1, 0)
+	prevYear := currMonth.AddDate(-1, 0, 0)
+	nextYear := currMonth.AddDate(1, 0, 0)
 
 	c.HTML(
 		http.StatusOK,
@@ -331,6 +333,8 @@ func (api *serveAPI) ServeCalendar(c *gin.Context) {
 			"Month":     currMonth,
 			"NextMonth": nextMonth,
 			"PrevMonth": prevMonth,
+			"PrevYear":  prevYear,
+			"NextYear":  nextYear,
 			"Days":      calendarDays,
 		},
 	)

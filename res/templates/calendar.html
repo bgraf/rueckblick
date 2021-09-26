@@ -1,6 +1,9 @@
 {{template "header"}}
 
 <div class="calendar-nav">
+    <a href ="{{ .PrevYear | calendarURL }}">
+        <i class="icon-arrow-s-left"></i>
+    </a>
     <a href ="{{ .PrevMonth | calendarURL }}">
         <i class="icon-arrow-left"></i>
     </a>
@@ -9,6 +12,9 @@
     </span>
     <a href ="{{ .NextMonth | calendarURL }}">
     <i class="icon-arrow-right"></i>
+    </a>
+    <a href ="{{ .NextYear | calendarURL }}">
+        <i class="icon-arrow-s-right"></i>
     </a>
 </div>
 
