@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/document"
 	"gopkg.in/yaml.v2"
 
@@ -36,8 +37,8 @@ type genPreviewOptions struct {
 
 func defaultGenPreviewOptions() genPreviewOptions {
 	return genPreviewOptions{
-		Size:            600,
-		TargetImagePath: "preview.jpg",
+		Size:            config.DefaultPreviewWidth(),
+		TargetImagePath: config.DefaultPreviewFilename(),
 	}
 }
 
@@ -93,7 +94,7 @@ func genPreview(opts genPreviewOptions) error {
 
 	defer fOut.Close()
 
-	jpegOpts := jpeg.Options{Quality: 95}
+	jpegOpts := jpeg.Options{Quality: config.DefaultPreviewJPEGQuality()}
 	err = jpeg.Encode(fOut, previewImg, &jpegOpts)
 	if err != nil {
 		return fmt.Errorf("saving preview image failed: %w", err)
@@ -231,6 +232,6 @@ func readFrontMatterAndSource(file string) (document.FrontMatter, []byte, error)
 func init() {
 	genCmd.AddCommand(previewCmd)
 
-	previewCmd.Flags().StringP("output", "o", "preview.jpg", "Output filename")
-	previewCmd.Flags().IntP("size", "s", 600, "Preview image width, height")
+	previewCmd.Flags().StringP("output", "o", config.DefaultPreviewFilename(), "Output filename")
+	previewCmd.Flags().IntP("size", "s", config.DefaultPreviewWidth(), "Preview image width, height")
 }

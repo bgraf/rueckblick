@@ -13,3 +13,23 @@ func HasJournalDirectory() bool {
 func JournalDirectory() string {
 	return viper.GetString(KeyJournalDirectory)
 }
+
+func DefaultPhotosDirectory() string {
+	return "photos"
+}
+
+func DefaultPhotoWidth() int {
+	return 2000
+}
+
+func DefaultPreviewWidth() int {
+	return 600
+}
+
+func DefaultPreviewFilename() string {
+	return "preview.jpg"
+}
+
+func DefaultPreviewJPEGQuality() int {
+	return 95
+}

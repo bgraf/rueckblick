@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/markdown/yamlblock"
 	"github.com/yuin/goldmark/parser"
 )
@@ -49,7 +50,7 @@ func (g *GalleryAddin) Make(pc parser.Context) interface{} {
 	return &galleryNode{
 		documentPath: path,
 		count:        getAndIncreaseGalleryCount(pc),
-		Path:         "photos",
+		Path:         config.DefaultPhotosDirectory(),
 		Include:      "*.jpg",
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/bgraf/rueckblick/config"
 	"github.com/spf13/cobra"
 )
 
@@ -58,9 +59,8 @@ folder.`,
 func init() {
 	genCmd.AddCommand(galleryCmd)
 
-	galleryCmd.Flags().IntP("size", "s", 2000, "Maximum width or height of the scaled images")
-	galleryCmd.Flags().StringP("output", "o", "photos", "Output directory")
-	// TODO: bind to config file value
+	galleryCmd.Flags().IntP("size", "s", config.DefaultPhotoWidth(), "Maximum width or height of the scaled images")
+	galleryCmd.Flags().StringP("output", "o", config.DefaultPhotosDirectory(), "Output directory")
 }
 
 type genGalleryOptions struct {
@@ -72,8 +72,8 @@ type genGalleryOptions struct {
 
 func defaultGenGalleryOptions() genGalleryOptions {
 	return genGalleryOptions{
-		Size:                   2000,
-		TargetGalleryDirectory: "photos",
+		Size:                   config.DefaultPhotoWidth(),
+		TargetGalleryDirectory: config.DefaultPhotosDirectory(),
 	}
 }
 
@@ -301,7 +301,7 @@ func addGalleryToDocument(opts genGalleryOptions) error {
 
 	// Append to document file
 	fmt.Fprintln(f, "\n:: gallery ---")
-	if galleryRelPath != "photos" {
+	if galleryRelPath != config.DefaultPhotosDirectory() {
 		fmt.Fprintf(f, "path: %s\n", galleryRelPath)
 	}
 	fmt.Fprintln(f, "---")
