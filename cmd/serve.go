@@ -28,4 +28,11 @@ func init() {
 		8000,
 		"HTTP port",
 	)
+
+	serveCmd.Flags().BoolP(
+		"dev",
+		"D",
+		false,
+		"Development mode",
+	)
 }

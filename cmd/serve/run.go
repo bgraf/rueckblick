@@ -35,6 +35,11 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no journal directory configured")
 	}
 
+	devMode, err := cmd.Flags().GetBool("dev")
+	if err != nil {
+		panic(err) // should not happen
+	}
+
 	rootDirectory := config.JournalDirectory()
 
 	rewriter := newResourceMap()
@@ -65,6 +70,10 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 	)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if !devMode {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	r := gin.New()
