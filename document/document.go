@@ -72,9 +72,20 @@ func (doc *Document) MapElementID(no int) string {
 
 	return ""
 }
+
 func (doc *Document) GalleryElementID(no int) string {
 	if no < len(doc.Galleries) {
 		return doc.Galleries[no].ElementID
+	}
+
+	return ""
+}
+
+func (doc *Document) FirstLocationTag() string {
+	for _, tag := range doc.Tags {
+		if tag.Category == "location" {
+			return tag.String()
+		}
 	}
 
 	return ""

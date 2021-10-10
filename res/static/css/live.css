@@ -492,6 +492,11 @@ a:hover {
     width: 95px;
 }
 
+.calendar-location {
+    font-size:12px;
+    margin-top:3px;
+}
+
 .gpx-map {
     height: 600px;
     border-radius: 5px;

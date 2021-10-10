@@ -47,6 +47,9 @@
                     </div>
                     {{ end }}
                 </a>
+                <span class="calendar-location" title="{{ .Document.FirstLocationTag }}">
+                    {{ .Document.FirstLocationTag | shortenLocation }}
+                </span>
             {{ end }}
         </div>
     {{ end }}

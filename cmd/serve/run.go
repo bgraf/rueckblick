@@ -116,6 +116,27 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 			return monday.Format(t, "January 2006", monday.LocaleDeDE)
 		},
 
+		"shortenLocation": func(s string) string {
+			firstN := func(s string, n int) string {
+				i := 0
+				for j := range s {
+					if i == n {
+						return s[:j]
+					}
+					i++
+				}
+				return s
+			}
+
+			maxLen := 13
+
+			if len(s) > maxLen {
+				return firstN(s, maxLen-2) + "..."
+			}
+
+			return s
+		},
+
 		"calendarURL": func(t time.Time) string {
 			y, m, _ := t.Date()
 			return fmt.Sprintf("/calendar/%d/%d", y, m)
