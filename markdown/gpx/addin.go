@@ -3,6 +3,7 @@ package gpx
 import (
 	"fmt"
 
+	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/markdown/yamlblock"
 	"github.com/yuin/goldmark/parser"
 )
@@ -52,6 +53,7 @@ func (g *GPXAddin) Make(pc parser.Context) interface{} {
 	return &gpxNode{
 		documentPath: path,
 		mapNo:        getAndIncreaseGalleryCount(pc),
+		File:         config.DefaultGPXFile(),
 	}
 }
 

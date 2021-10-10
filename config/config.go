@@ -18,6 +18,10 @@ func DefaultPhotosDirectory() string {
 	return "photos"
 }
 
+func DefaultGPXFile() string {
+	return "track.gpx"
+}
+
 func DefaultPhotoWidth() int {
 	return 2000
 }
