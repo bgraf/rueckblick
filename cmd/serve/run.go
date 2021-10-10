@@ -105,7 +105,7 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 			return template.HTML(tag.String())
 		},
 		"isFirstOfWeek": func(t time.Time) bool {
-			return t.Weekday() == time.Sunday
+			return t.Weekday() == time.Monday
 		},
 		"ISOWeek": func(t time.Time) int {
 			_, w := t.ISOWeek()
@@ -267,6 +267,24 @@ func (api *serveAPI) ServeImage(c *gin.Context) {
 	c.File(path)
 }
 
+// priorMonday returns the monday prior to t or t itself if t is on a monday.
+func priorMonday(t time.Time) time.Time {
+	if t.Weekday() >= time.Monday {
+		return t.AddDate(0, 0, 1-int(t.Weekday()))
+	}
+
+	return priorMonday(t.AddDate(0, 0, -1-int(t.Weekday())))
+}
+
+// nextSunday returns the sunday after t or t itself if t is on a sunday.
+func nextSunday(t time.Time) time.Time {
+	if t.Weekday() == time.Sunday {
+		return t
+	}
+
+	return t.AddDate(0, 0, 7-int(t.Weekday()))
+}
+
 func (api *serveAPI) ServeCalendar(c *gin.Context) {
 	year, err := strconv.Atoi(c.Param("year"))
 	if err != nil {
@@ -307,10 +325,11 @@ func (api *serveAPI) ServeCalendar(c *gin.Context) {
 	var calendarDays []calendarDay
 
 	curr := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
-	target := curr.AddDate(0, 1, 0)
-	curr = curr.AddDate(0, 0, -int(curr.Weekday()))
+	target := curr.AddDate(0, 1, -1)
+	curr = priorMonday(curr)
+	target = nextSunday(target)
 
-	for {
+	for ; !curr.After(target); curr = curr.AddDate(0, 0, 1) {
 		var doc *document.Document
 		if int(curr.Month()) == month {
 			if docs, ok := byDay[curr.Day()]; ok {
@@ -322,11 +341,6 @@ func (api *serveAPI) ServeCalendar(c *gin.Context) {
 			Document: doc,
 			Date:     curr,
 		})
-		curr = curr.AddDate(0, 0, 1)
-
-		if !curr.Before(target) && curr.Weekday() == time.Sunday {
-			break
-		}
 	}
 
 	currMonth := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)

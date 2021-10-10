@@ -20,13 +20,13 @@
 
 <div class="calendar-frame">
     <div></div>
-    <div class="calendar-column-header">Sonntag</div>
     <div class="calendar-column-header">Montag</div>
     <div class="calendar-column-header">Dienstag</div>
     <div class="calendar-column-header">Mittwoch</div>
     <div class="calendar-column-header">Donnerstag</div>
     <div class="calendar-column-header">Freitag</div>
     <div class="calendar-column-header">Samstag</div>
+    <div class="calendar-column-header">Sonntag</div>
     {{ range .Days }}
         {{ if .Date | isFirstOfWeek }}
         <div class="calendar-week">
