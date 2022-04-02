@@ -15,6 +15,7 @@ import (
 	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/document"
 	"github.com/bgraf/rueckblick/render"
+	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/gin-gonic/gin"
 	"github.com/goodsign/monday"
 	"github.com/google/uuid"
@@ -142,9 +143,8 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 			return fmt.Sprintf("/calendar/%d/%d", y, m)
 		},
 
-		"today": func() time.Time {
-			return time.Now()
-		},
+		"today":      time.Now,
+		"equalMonth": dates.EqualMonth,
 	})
 
 	// Load templates and static files
@@ -288,24 +288,6 @@ func (api *serveAPI) ServeImage(c *gin.Context) {
 	c.File(path)
 }
 
-// priorMonday returns the monday prior to t or t itself if t is on a monday.
-func priorMonday(t time.Time) time.Time {
-	if t.Weekday() >= time.Monday {
-		return t.AddDate(0, 0, 1-int(t.Weekday()))
-	}
-
-	return priorMonday(t.AddDate(0, 0, -1-int(t.Weekday())))
-}
-
-// nextSunday returns the sunday after t or t itself if t is on a sunday.
-func nextSunday(t time.Time) time.Time {
-	if t.Weekday() == time.Sunday {
-		return t
-	}
-
-	return t.AddDate(0, 0, 7-int(t.Weekday()))
-}
-
 func (api *serveAPI) ServeCalendar(c *gin.Context) {
 	year, err := strconv.Atoi(c.Param("year"))
 	if err != nil {
@@ -319,25 +301,6 @@ func (api *serveAPI) ServeCalendar(c *gin.Context) {
 		return
 	}
 
-	byDay := make(map[int][]*document.Document)
-
-	for _, doc := range api.store.Documents {
-		y := doc.Date.Year()
-		m := int(doc.Date.Month())
-
-		if y != year || m != month {
-			continue
-		}
-
-		d := doc.Date.Day()
-
-		if docs, ok := byDay[d]; ok {
-			byDay[d] = append(docs, doc)
-		} else {
-			byDay[d] = []*document.Document{doc}
-		}
-	}
-
 	type calendarDay struct {
 		Date     time.Time
 		Document *document.Document
@@ -345,40 +308,35 @@ func (api *serveAPI) ServeCalendar(c *gin.Context) {
 
 	var calendarDays []calendarDay
 
-	curr := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
-	target := curr.AddDate(0, 1, -1)
-	curr = priorMonday(curr)
-	target = nextSunday(target)
+	startDate := dates.FromYM(year, month)
+	endDate := dates.LastDayOfMonth(startDate)
+	startDate = dates.PriorMonday(startDate)
+	endDate = dates.NextSunday(endDate)
 
-	for ; !curr.After(target); curr = curr.AddDate(0, 0, 1) {
+	dates.ForEachDay(startDate, endDate, func(curr time.Time) {
 		var doc *document.Document
-		if int(curr.Month()) == month {
-			if docs, ok := byDay[curr.Day()]; ok {
-				doc = docs[0]
-			}
+
+		if docs := api.store.DocumentsOnDate(curr); len(docs) > 0 {
+			doc = docs[0]
 		}
 
 		calendarDays = append(calendarDays, calendarDay{
 			Document: doc,
 			Date:     curr,
 		})
-	}
+	})
 
-	currMonth := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
-	prevMonth := currMonth.AddDate(0, -1, 0)
-	nextMonth := currMonth.AddDate(0, 1, 0)
-	prevYear := currMonth.AddDate(-1, 0, 0)
-	nextYear := currMonth.AddDate(1, 0, 0)
+	currMonth := dates.FromYM(year, month)
 
 	c.HTML(
 		http.StatusOK,
 		"calendar.html",
 		gin.H{
 			"Month":     currMonth,
-			"NextMonth": nextMonth,
-			"PrevMonth": prevMonth,
-			"PrevYear":  prevYear,
-			"NextYear":  nextYear,
+			"PrevMonth": dates.AddMonths(currMonth, -1),
+			"NextMonth": dates.AddMonths(currMonth, 1),
+			"PrevYear":  dates.AddYears(currMonth, -1),
+			"NextYear":  dates.AddYears(currMonth, 1),
 			"Days":      calendarDays,
 		},
 	)

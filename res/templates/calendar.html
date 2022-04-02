@@ -27,13 +27,18 @@
     <div class="calendar-column-header">Freitag</div>
     <div class="calendar-column-header">Samstag</div>
     <div class="calendar-column-header">Sonntag</div>
+    {{ $context := . }}
     {{ range .Days }}
         {{ if .Date | isFirstOfWeek }}
         <div class="calendar-week">
             {{ .Date | ISOWeek }}
         </div>
         {{end}}
+        {{ if equalMonth .Date $context.Month }}
         <div class="calendar-day">
+        {{ else }}
+        <div class="calendar-day calendar-day-other-month">
+        {{ end }}
             <div class="calendar-day-no">{{ .Date.Format "2" }}</div>
             <br>
 

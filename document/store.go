@@ -3,14 +3,6 @@ package document
 import (
 	"bytes"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/bgraf/rueckblick/markdown/gallery"
-	"github.com/bgraf/rueckblick/markdown/gpx"
-	"github.com/bgraf/rueckblick/markdown/yamlblock"
-	"github.com/google/uuid"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -18,6 +10,16 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/bgraf/rueckblick/markdown/gallery"
+	"github.com/bgraf/rueckblick/markdown/gpx"
+	"github.com/bgraf/rueckblick/markdown/yamlblock"
+	"github.com/bgraf/rueckblick/util/dates"
+	"github.com/google/uuid"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 type Store struct {
@@ -68,6 +70,18 @@ func (s *Store) DocumentByGUID(guid uuid.UUID) *Document {
 	}
 
 	return nil
+}
+
+func (s *Store) DocumentsOnDate(t time.Time) []*Document {
+	var docs []*Document
+
+	for _, doc := range s.Documents {
+		if dates.EqualDate(doc.Date, t) {
+			docs = append(docs, doc)
+		}
+	}
+
+	return docs
 }
 
 func (s *Store) ReloadByGUID(guid uuid.UUID) (*Document, error) {

@@ -424,6 +424,10 @@ a:hover {
     font-size: 15px;
 }
 
+.calendar-day-other-month * {
+    opacity: 50%;
+}
+
 .calendar-day {
     display: flex;
     flex-direction: column;
