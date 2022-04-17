@@ -58,3 +58,7 @@ func AddMonths(t time.Time, offset int) time.Time {
 func AddYears(t time.Time, offset int) time.Time {
 	return t.AddDate(offset, 0, 0)
 }
+
+func DateString(t time.Time) string {
+	return t.Format("2006-01-02")
+}

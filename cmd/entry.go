@@ -6,12 +6,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/bgraf/rueckblick/cmd/tools"
 	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/google/uuid"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -34,28 +36,14 @@ func init() {
 	entryCmd.Flags().StringP("photos-dir", "p", "", "Generate a gallery from the photos in the photo directory")
 }
 
+var datePattern = regexp.MustCompile(`\d\d\d\d-\d\d-\d\d`)
+
 func runGenEntry(cmd *cobra.Command, args []string) error {
 	if !config.HasJournalDirectory() {
 		return fmt.Errorf("no journal directory configured")
 	}
 
-	// Read date
-	dateStr := time.Now().Format("2006-01-02")
-	{
-		prompt := survey.Input{
-			Message: "Date",
-			Default: dateStr,
-		}
-		err := survey.AskOne(
-			&prompt,
-			&dateStr,
-			survey.WithValidator(func(ans interface{}) error {
-				_, err := time.Parse("2006-01-02", ans.(string))
-				return err
-			}),
-		)
-		exitOnInterrupt(err)
-	}
+	date := promptDate(cmd)
 
 	// Read title
 	title := ""
@@ -150,11 +138,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		exitOnInterrupt(err)
 	}
 
-	date, err := time.Parse("2006-01-02", dateStr)
-	if err != nil {
-		// Should not happen due to validator
-		panic(err)
-	}
+	dateStr := dates.DateString(date)
 
 	journalDir := config.JournalDirectory()
 	normTitle := normalizeTitle(title)
@@ -337,4 +321,58 @@ func normalizeTitle(title string) string {
 	}
 
 	return b.String()
+}
+
+func isTodayAnswer(s string) bool {
+	return s == "today" || s == "heute"
+}
+
+func promptDate(cmd *cobra.Command) time.Time {
+	dateStr := time.Now().Format("2006-01-02")
+
+	isGuessedDate := false
+	if photosDir, err := cmd.Flags().GetString("photos-dir"); err == nil {
+		if match := datePattern.FindString(photosDir); match != "" {
+			dateStr = match
+			isGuessedDate = true
+		}
+	}
+
+	message := "Date"
+	if isGuessedDate {
+		message = message + " (guessed)"
+	}
+
+	prompt := survey.Input{
+		Message: message,
+		Default: dateStr,
+	}
+	err := survey.AskOne(
+		&prompt,
+		&dateStr,
+		survey.WithValidator(func(ans interface{}) error {
+			s := ans.(string)
+
+			if isTodayAnswer(s) {
+				return nil
+			}
+
+			_, err := time.Parse("2006-01-02", s)
+
+			return err
+		}),
+	)
+	exitOnInterrupt(err)
+
+	if isTodayAnswer(dateStr) {
+		return time.Now()
+	}
+
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		// Should not happen due to validator
+		panic(err)
+	}
+
+	return date
 }
