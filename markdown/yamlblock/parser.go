@@ -14,9 +14,10 @@ var yamlBlockParserNodeKind = ast.NewNodeKind("yamlBlockParserNode")
 
 type yamlBlockParserNode struct {
 	ast.BaseBlock
-	error  error
-	addin  Addin
-	object interface{}
+	error         error
+	addin         Addin
+	object        interface{}
+	immediateStop bool
 }
 
 func (n *yamlBlockParserNode) Dump(source []byte, level int) {
@@ -46,7 +47,10 @@ func (b *yamlBlockParser) Open(node ast.Node, reader text.Reader, pc parser.Cont
 
 	fields := strings.Fields(string(line))
 
-	if len(fields) < 3 || fields[0] != "::" || fields[2] != "---" {
+	// Syntax is "::" name ["---"]
+	// If the trailing "---" is not provided, then all default values are assumed
+
+	if len(fields) < 2 || fields[0] != "::" || (len(fields) >= 3 && fields[2] != "---") {
 		return nil, parser.NoChildren
 	}
 
@@ -63,10 +67,18 @@ func (b *yamlBlockParser) Open(node ast.Node, reader text.Reader, pc parser.Cont
 		addin: addin,
 	}
 
+	if len(fields) == 2 {
+		n.immediateStop = true
+	}
+
 	return n, parser.NoChildren
 }
 
 func (b *yamlBlockParser) Continue(node ast.Node, reader text.Reader, pc parser.Context) parser.State {
+	if node.(*yamlBlockParserNode).immediateStop {
+		return parser.Close
+	}
+
 	line, seg := reader.PeekLine()
 	lineStr := strings.TrimSpace(string(line))
 
@@ -88,10 +100,18 @@ func (b *yamlBlockParser) Close(node ast.Node, reader text.Reader, pc parser.Con
 		buf.Write(segment.Value(reader.Source()))
 	}
 
+	storeYamlObject(node, pc, buf.Bytes())
+}
+
+func storeYamlObject(node ast.Node, pc parser.Context, raw []byte) {
 	ynode := node.(*yamlBlockParserNode)
 	obj := ynode.addin.Make(pc)
 
-	err := yaml.Unmarshal(buf.Bytes(), obj)
+	var err error
+
+	if raw != nil {
+		err = yaml.Unmarshal(raw, obj)
+	}
 
 	if err != nil {
 		ynode.error = err
