@@ -83,6 +83,7 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 	r.GET("/", api.ServeIndex)
 	r.GET("/entry/:GUID", api.ServeEntry)
 	r.GET("/image/:GUID", api.ServeImage)
+	r.GET("/image/:GUID/file.jpg", api.ServeImage)
 	r.GET("/tags/", api.ServeTags)
 	r.GET("/tag/:tag", api.ServeTag)
 	r.GET("/calendar/:year/:month", api.ServeCalendar)

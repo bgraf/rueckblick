@@ -1,6 +1,7 @@
 package gallery
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
@@ -81,7 +82,7 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 
 		_, _ = w.WriteString("<div class=\"gallery-entry\"><a href=\"")
 		_, _ = w.WriteString(resPath)
-		_, _ = w.WriteString("\"><img class=\"gallery-item\" src=\"")
+		_, _ = w.WriteString("/file.jpg\"><img class=\"gallery-item\" src=\"")
 		_, _ = w.WriteString(resPath)
 		_, _ = w.WriteString("\"")
 
@@ -95,6 +96,14 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 	}
 
 	_, _ = w.WriteString("</div>")
+	_, _ = w.WriteString(fmt.Sprintf(
+		`<script>
+			var lightbox = GLightbox({
+				selector: '#%s a',
+			});
+		</script>`,
+		ElementID(node.count),
+	))
 
 	return ast.WalkSkipChildren, nil
 }
