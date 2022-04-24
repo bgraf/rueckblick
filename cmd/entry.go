@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/bgraf/rueckblick/cmd/tools"
 	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/google/uuid"
 
@@ -25,15 +27,13 @@ import (
 
 // entryCmd represents the entry command
 var entryCmd = &cobra.Command{
-	Use:   "entry",
+	Use:   "entry [PHOTO-AND-TRACK-DIRECTORY]",
 	Short: "Interactive process to generate a new entry",
 	RunE:  runGenEntry,
 }
 
 func init() {
 	genCmd.AddCommand(entryCmd)
-
-	entryCmd.Flags().StringP("photos-dir", "p", "", "Generate a gallery from the photos in the photo directory")
 }
 
 var datePattern = regexp.MustCompile(`\d\d\d\d-\d\d-\d\d`)
@@ -43,7 +43,20 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no journal directory configured")
 	}
 
-	date := promptDate(cmd)
+	if len(args) > 1 {
+		return fmt.Errorf("too many arguments")
+	}
+
+	inputDirectory := ""
+
+	if len(args) == 1 {
+		inputDirectory = strings.TrimSpace(args[0])
+		if s, err := os.Stat(inputDirectory); err != nil || !s.IsDir() {
+			return fmt.Errorf("path '%s' is not a directory", inputDirectory)
+		}
+	}
+
+	date := promptDate(inputDirectory)
 
 	// Read title
 	title := ""
@@ -222,24 +235,74 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	log.Print("created entry")
 
 	// Generate a gallery if requested by user
-	{
-		photosDir, err := cmd.Flags().GetString("photos-dir")
-		if err != nil {
-			panic(err) // should not happen
+	if len(inputDirectory) > 0 {
+		if err := copyGpxTracks(inputDirectory, entryDir); err != nil {
+			log.Printf("Warning: copying GPX tracks failed: %s\n", err)
 		}
 
-		if len(strings.TrimSpace(photosDir)) > 0 {
-			log.Printf("generating gallery from photos-dir: %s\n", photosDir)
-			err := generateGallery(photosDir, entryDir)
-			if err != nil {
-				log.Printf("Warning: could not generated gallery: %s\n", err)
-			}
+		log.Printf("generating gallery from photos-dir: %s\n", inputDirectory)
+		if err := generateGallery(inputDirectory, entryDir); err != nil {
+			log.Printf("Warning: could not generated gallery: %s\n", err)
 		}
 	}
 
 	fmt.Printf("== Change to entry directory ==\n\ncd %s\n\n", entryDir)
 
 	return nil
+}
+
+func copyGpxTracks(inputDirectory string, entryDirectory string) error {
+	// Gather all GPX
+	filePaths, err := filesystem.GatherFiles([]string{inputDirectory}, []string{".gpx"})
+	if err != nil {
+		return fmt.Errorf("scanning files: %w", err)
+	} else if len(filePaths) == 0 {
+		return nil
+	}
+
+	fmt.Printf("files :%#v\n", filePaths)
+
+	// copy tracks
+	if len(filePaths) == 1 {
+		outPath := path.Join(entryDirectory, config.DefaultGPXFile())
+
+		err := filesystem.Copy(filePaths[0], outPath)
+		if err != nil {
+			return err
+		}
+	} else {
+		for _, inPath := range filePaths {
+			outPath := path.Join(entryDirectory, path.Base(inPath))
+
+			err := filesystem.Copy(inPath, outPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// ask whether to append it to the document
+	shouldContinue := true
+
+	prompt := &survey.Confirm{
+		Message: "Append GPX track to document",
+		Default: shouldContinue,
+	}
+
+	err = survey.AskOne(prompt, &shouldContinue, nil)
+	if err != nil {
+		return err
+	}
+
+	if !shouldContinue {
+		return nil
+	}
+
+	return filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
+		fmt.Fprintln(f, "\n:: gpx")
+
+		return nil
+	})
 }
 
 func generateGallery(photosDirectory string, documentDirectory string) error {
@@ -327,15 +390,13 @@ func isTodayAnswer(s string) bool {
 	return s == "today" || s == "heute"
 }
 
-func promptDate(cmd *cobra.Command) time.Time {
+func promptDate(inputDirectory string) time.Time {
 	dateStr := time.Now().Format("2006-01-02")
 
 	isGuessedDate := false
-	if photosDir, err := cmd.Flags().GetString("photos-dir"); err == nil {
-		if match := datePattern.FindString(photosDir); match != "" {
-			dateStr = match
-			isGuessedDate = true
-		}
+	if match := datePattern.FindString(inputDirectory); match != "" {
+		dateStr = match
+		isGuessedDate = true
 	}
 
 	message := "Date"

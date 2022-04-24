@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/bgraf/rueckblick/config"
+	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/spf13/cobra"
 )
 
@@ -104,7 +105,7 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 
 func genGallery(opts genGalleryOptions) error {
 	// Gather all image files
-	filePaths, err := gatherFiles(opts.Args, []string{".jpeg", ".jpg"})
+	filePaths, err := filesystem.GatherFiles(opts.Args, []string{".jpeg", ".jpg"})
 	if err != nil {
 		return fmt.Errorf("scanning files: %w", err)
 	} else if len(filePaths) == 0 {
@@ -182,72 +183,6 @@ func destinationImageExtension(ext string) string {
 	return ext
 }
 
-func gatherFiles(roots []string, extensions []string) ([]string, error) {
-	normalizeExtension := func(ext string) (string, bool) {
-		ext = strings.ToLower(ext)
-		for _, e := range extensions {
-			if e == ext {
-				return ext, true
-			}
-		}
-		return ext, false
-	}
-
-	appendAbsPath := func(paths []string, path string) ([]string, error) {
-		path, err := filepath.Abs(path)
-		if err != nil {
-			return paths, fmt.Errorf("absolute path: %w", err)
-		}
-		return append(paths, path), nil
-	}
-
-	var paths []string
-
-	for _, root := range roots {
-		fi, err := os.Stat(root)
-		if err != nil {
-			return nil, err
-		}
-
-		if fi.Mode().IsRegular() {
-			ext, ok := normalizeExtension(filepath.Ext(fi.Name()))
-			if !ok {
-				_, _ = fmt.Fprintf(os.Stderr, "ignoring file with extension '%s': %s\n", ext, root)
-				continue
-			}
-
-			paths, err = appendAbsPath(paths, root)
-			if err != nil {
-				return nil, err
-			}
-
-		} else if fi.Mode().IsDir() {
-			files, err := ioutil.ReadDir(root)
-			if err != nil {
-				return nil, fmt.Errorf("read dir: %w", err)
-			}
-
-			for _, fi := range files {
-				realPath := filepath.Join(root, fi.Name())
-				ext, ok := normalizeExtension(filepath.Ext(fi.Name()))
-				if !ok {
-					_, _ = fmt.Fprintf(os.Stderr, "ignoring file with extension '%s': %s\n", ext, realPath)
-					continue
-				}
-
-				paths, err = appendAbsPath(paths, realPath)
-				if err != nil {
-					return nil, err
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("path '%s' neither directory nor file", root)
-		}
-	}
-
-	return paths, nil
-}
-
 func addGalleryToDocument(opts genGalleryOptions) error {
 	var err error
 
@@ -260,51 +195,29 @@ func addGalleryToDocument(opts genGalleryOptions) error {
 		}
 	}
 
-	// Find possible document file
-	files, err := filepath.Glob(filepath.Join(opts.DocumentDirectory, "*.md"))
+	shouldContinue := true
+
+	prompt := &survey.Confirm{
+		Message: "Append gallery to document",
+		Default: shouldContinue,
+	}
+
+	err = survey.AskOne(prompt, &shouldContinue, nil)
 	if err != nil {
-		return fmt.Errorf("glob: %w", err)
+		return err
 	}
 
-	if len(files) != 1 {
-		return fmt.Errorf("zero or multiple markdown files in current working directory")
+	if !shouldContinue {
+		return nil
 	}
 
-	file := files[0]
-
-	// Ask whether to append to gallery
-	{
-		shouldContinue := true
-
-		prompt := &survey.Confirm{
-			Message: fmt.Sprintf("Append gallery to document (%s)", file),
-			Default: shouldContinue,
+	return filesystem.FindAndAppendToMarkdown(opts.DocumentDirectory, func(f io.Writer, path string) error {
+		fmt.Fprintln(f, "\n:: gallery ---")
+		if galleryRelPath != config.DefaultPhotosDirectory() {
+			fmt.Fprintf(f, "path: %s\n", galleryRelPath)
 		}
+		fmt.Fprintln(f, "---")
 
-		err := survey.AskOne(prompt, &shouldContinue, nil)
-		if err != nil {
-			return err
-		}
-
-		if !shouldContinue {
-			return nil
-		}
-	}
-
-	// Open document for appending
-	f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("open document: %w", err)
-	}
-
-	defer func() { _ = f.Close() }()
-
-	// Append to document file
-	fmt.Fprintln(f, "\n:: gallery ---")
-	if galleryRelPath != config.DefaultPhotosDirectory() {
-		fmt.Fprintf(f, "path: %s\n", galleryRelPath)
-	}
-	fmt.Fprintln(f, "---")
-
-	return nil
+		return nil
+	})
 }
