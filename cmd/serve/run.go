@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -17,19 +16,9 @@ import (
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/gin-gonic/gin"
-	"github.com/goodsign/monday"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
-
-func tagIdentifier(tag string) string {
-	tag = document.NormalizeTagName(tag)
-	return tag
-}
-
-func tagIdentifierEscaped(tag string) string {
-	return url.PathEscape(tagIdentifier(tag))
-}
 
 func RunServeCmd(cmd *cobra.Command, args []string) error {
 	if !config.HasJournalDirectory() {
@@ -92,61 +81,7 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 
 	r.UseRawPath = true
 
-	r.SetFuncMap(template.FuncMap{
-		"tagColor": func(tag document.Tag) string {
-			return api.tagSet.HexColor(tag.String())
-		},
-		"tagIdentifier": func(tag document.Tag) string {
-			return tagIdentifierEscaped(tag.String())
-		},
-		"tagDisplay": func(tag document.Tag) template.HTML {
-			if tag.Category == "location" {
-				return template.HTML(fmt.Sprintf("<i class=\"icon-map-pin-line icon-small\"></i> %s", tag.String()))
-			}
-
-			return template.HTML(tag.String())
-		},
-		"isFirstOfWeek": func(t time.Time) bool {
-			return t.Weekday() == time.Monday
-		},
-		"ISOWeek": func(t time.Time) int {
-			_, w := t.ISOWeek()
-			return w
-		},
-
-		"yearMonthDisplay": func(t time.Time) string {
-			return monday.Format(t, "January 2006", monday.LocaleDeDE)
-		},
-
-		"shortenLocation": func(s string) string {
-			firstN := func(s string, n int) string {
-				i := 0
-				for j := range s {
-					if i == n {
-						return s[:j]
-					}
-					i++
-				}
-				return s
-			}
-
-			maxLen := 13
-
-			if len(s) > maxLen {
-				return firstN(s, maxLen-2) + "..."
-			}
-
-			return s
-		},
-
-		"calendarURL": func(t time.Time) string {
-			y, m, _ := t.Date()
-			return fmt.Sprintf("/calendar/%d/%d", y, m)
-		},
-
-		"today":      time.Now,
-		"equalMonth": dates.EqualMonth,
-	})
+	r.SetFuncMap(render.MakeTemplateFuncmap())
 
 	// Load templates and static files
 	resourceDir, err := cmd.Flags().GetString("resource-dir")
@@ -183,7 +118,6 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 
 type serveAPI struct {
 	store    *document.Store
-	tagSet   *render.TagSet
 	live     bool
 	rewriter *resourceMap
 }
@@ -192,11 +126,8 @@ func newServeAPI(store *document.Store, rewriter *resourceMap) *serveAPI {
 	store.OrderDocumentsByDate()
 	store.OrderTags()
 
-	tagSet := render.NewTagSet()
-
 	api := &serveAPI{
 		store:    store,
-		tagSet:   tagSet,
 		live:     true,
 		rewriter: rewriter,
 	}
@@ -218,10 +149,6 @@ func (api *serveAPI) prepareDocument(doc *document.Document) {
 	}
 
 	render.RecodePaths(doc, recoderFunc)
-
-	for _, t := range doc.Tags {
-		api.tagSet.HexColor(t.String())
-	}
 
 	if doc.HasPreview() {
 		doc.Preview, _ = recoderFunc(doc.Preview)

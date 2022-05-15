@@ -5,8 +5,6 @@ import (
 	"sort"
 	"time"
 
-	"log"
-
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/util"
 
@@ -39,9 +37,7 @@ func (g *GalleryAddin) Render(w util.BufWriter, source []byte, object interface{
 		var err error
 
 		filesExif[i].exif, err = images.ReadEXIFFromFile(filePath)
-		if err != nil {
-			log.Printf("could not load exif data: %s", err)
-		}
+		_ = err // Note: check `err` to see whether EXIF reading succeeded
 	}
 
 	sort.Slice(
