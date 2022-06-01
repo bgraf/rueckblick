@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/bgraf/rueckblick/config"
-	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/data"
+	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/gin-gonic/gin"
@@ -34,17 +35,8 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 
 	rewriter := newResourceMap()
 
-	storeOpts := &document.StoreOptions{
-		MapGPXResource: func(doc *document.Document, srcPath string) (document.Resource, bool) {
-			guid := rewriter.IDFromPath(srcPath)
-			res := document.Resource{
-				GUID: guid,
-				URI:  fmt.Sprintf("/gpx/%s", guid.String()),
-			}
-			return res, true
-		},
-
-		MapImageResource: func(doc *document.Document, galleryNo int, srcPath string) (document.Resource, bool) {
+	storeOpts := &data.StoreOptions{
+		RenderImagePath: func(doc *document.Document, srcPath string) (document.Resource, bool) {
 			guid := rewriter.IDFromPath(srcPath)
 			res := document.Resource{
 				GUID: guid,
@@ -54,7 +46,7 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 		},
 	}
 
-	store, err := document.NewStore(
+	store, err := data.NewStore(
 		rootDirectory,
 		storeOpts,
 	)
@@ -117,12 +109,12 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 }
 
 type serveAPI struct {
-	store    *document.Store
+	store    *data.Store
 	live     bool
 	rewriter *resourceMap
 }
 
-func newServeAPI(store *document.Store, rewriter *resourceMap) *serveAPI {
+func newServeAPI(store *data.Store, rewriter *resourceMap) *serveAPI {
 	store.OrderDocumentsByDate()
 	store.OrderTags()
 
@@ -140,20 +132,6 @@ func newServeAPI(store *document.Store, rewriter *resourceMap) *serveAPI {
 }
 
 func (api *serveAPI) prepareDocument(doc *document.Document) {
-	render.ImplicitFigure(doc)
-
-	recoderFunc := func(original string) (string, bool) {
-		srcPath := filepath.Join(filepath.Dir(doc.Path), original)
-		guid := api.rewriter.IDFromPath(srcPath)
-		return fmt.Sprintf("/image/%s", guid.String()), true
-	}
-
-	render.RecodePaths(doc, recoderFunc)
-
-	if doc.HasPreview() {
-		doc.Preview, _ = recoderFunc(doc.Preview)
-
-	}
 }
 
 func (api *serveAPI) documentByGUID(guid uuid.UUID) *document.Document {

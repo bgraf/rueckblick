@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/goodsign/monday"
 )

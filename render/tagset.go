@@ -1,8 +1,8 @@
 package render
 
 import (
+	"github.com/bgraf/rueckblick/data/document"
 	"github.com/lucasb-eyer/go-colorful"
-	"github.com/bgraf/rueckblick/document"
 )
 
 type TagSet struct {

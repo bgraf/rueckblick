@@ -1,6 +1,7 @@
 package document
 
 import (
+	"path"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -36,7 +37,8 @@ func (g *Gallery) AppendImage(res Resource, filePath string, timestamp *time.Tim
 }
 
 type Document struct {
-	Path           string            // File system path
+	// File system path
+	Path           string
 	HTML           *goquery.Document // HTML content
 	GUID           uuid.UUID
 	Title          string
@@ -47,6 +49,10 @@ type Document struct {
 	Galleries      []*Gallery
 	Maps           []GXPMap
 	HasFrontMatter bool
+}
+
+func (doc *Document) DocumentDirectory() string {
+	return path.Dir(doc.Path)
 }
 
 func (doc *Document) HasAbstract() bool {

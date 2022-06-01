@@ -1,4 +1,4 @@
-package document
+package data
 
 import (
 	"bytes"
@@ -12,9 +12,8 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/bgraf/rueckblick/markdown/gallery"
-	"github.com/bgraf/rueckblick/markdown/gpx"
-	"github.com/bgraf/rueckblick/markdown/yamlblock"
+	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/google/uuid"
 	"github.com/yuin/goldmark"
@@ -22,18 +21,22 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
+type StoreOptions struct {
+	RenderImagePath func(doc *document.Document, srcPath string) (document.Resource, bool)
+}
+
 type Store struct {
 	RootDirectory       string
-	Documents           []*Document
-	tagByNormalizedName map[string]Tag
-	tags                []Tag
+	Documents           []*document.Document
+	tagByNormalizedName map[string]document.Tag
+	tags                []document.Tag
 	options             *StoreOptions
 }
 
 func NewStore(rootDirectory string, options *StoreOptions) (*Store, error) {
 	store := &Store{
 		RootDirectory:       rootDirectory,
-		tagByNormalizedName: make(map[string]Tag),
+		tagByNormalizedName: make(map[string]document.Tag),
 		options:             options,
 	}
 
@@ -62,7 +65,7 @@ func (s *Store) OrderDocumentsByDate() {
 	})
 }
 
-func (s *Store) DocumentByGUID(guid uuid.UUID) *Document {
+func (s *Store) DocumentByGUID(guid uuid.UUID) *document.Document {
 	for _, doc := range s.Documents {
 		if doc.GUID == guid {
 			return doc
@@ -72,8 +75,8 @@ func (s *Store) DocumentByGUID(guid uuid.UUID) *Document {
 	return nil
 }
 
-func (s *Store) DocumentsOnDate(t time.Time) []*Document {
-	var docs []*Document
+func (s *Store) DocumentsOnDate(t time.Time) []*document.Document {
+	var docs []*document.Document
 
 	for _, doc := range s.Documents {
 		if dates.EqualDate(doc.Date, t) {
@@ -84,7 +87,7 @@ func (s *Store) DocumentsOnDate(t time.Time) []*Document {
 	return docs
 }
 
-func (s *Store) ReloadByGUID(guid uuid.UUID) (*Document, error) {
+func (s *Store) ReloadByGUID(guid uuid.UUID) (*document.Document, error) {
 	doc := s.DocumentByGUID(guid)
 	if doc == nil {
 		return nil, fmt.Errorf("no such document")
@@ -105,10 +108,10 @@ func (s *Store) ReloadByGUID(guid uuid.UUID) (*Document, error) {
 	return newDoc, nil
 }
 
-func (s *Store) DocumentsByTagName(name string) []*Document {
-	name = NormalizeTagName(name)
+func (s *Store) DocumentsByTagName(name string) []*document.Document {
+	name = document.NormalizeTagName(name)
 
-	var result []*Document
+	var result []*document.Document
 
 	for _, doc := range s.Documents {
 		for _, t := range doc.Tags {
@@ -123,15 +126,15 @@ func (s *Store) DocumentsByTagName(name string) []*Document {
 	return result
 }
 
-func (s *Store) TagByName(name string) (Tag, bool) {
-	if tag, ok := s.tagByNormalizedName[NormalizeTagName(name)]; ok {
+func (s *Store) TagByName(name string) (document.Tag, bool) {
+	if tag, ok := s.tagByNormalizedName[document.NormalizeTagName(name)]; ok {
 		return tag, true
 	}
 
-	return Tag{}, false
+	return document.Tag{}, false
 }
 
-func (s *Store) Tags() []Tag {
+func (s *Store) Tags() []document.Tag {
 	return s.tags
 }
 
@@ -144,8 +147,8 @@ func (s *Store) OrderTags() {
 	)
 }
 
-func (s *Store) LoadDocuments(rootDirectory string) ([]*Document, error) {
-	var docs []*Document
+func (s *Store) LoadDocuments(rootDirectory string) ([]*document.Document, error) {
+	var docs []*document.Document
 
 	err := filepath.WalkDir(rootDirectory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -177,77 +180,26 @@ func (s *Store) LoadDocuments(rootDirectory string) ([]*Document, error) {
 	return docs, nil
 }
 
-func (s *Store) LoadDocument(path string) (*Document, error) {
+func (s *Store) LoadDocument(path string) (*document.Document, error) {
 	sourceText, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not read source file: %w", err)
 	}
 
-	doc := &Document{
+	doc := &document.Document{
 		Path: path,
 	}
 
-	sourceText, err = readFrontMatter(doc, sourceText)
+	sourceText, err = document.ReadFrontMatter(doc, sourceText)
 	if err != nil {
 		return nil, fmt.Errorf("could not read front matter: %w", err)
 	}
 
-	gpxOpts := &gpx.Options{
-		ProvideSource: func(mapNo int, srcPath string) (string, bool) {
-			res, ok := s.options.MapGPXResource(doc, srcPath)
-			if !ok {
-				return "", false
-			}
-
-			doc.Maps = append(
-				doc.Maps,
-				GXPMap{
-					GPXPath:   srcPath,
-					Resource:  res,
-					ElementID: gpx.ElementID(mapNo),
-				},
-			)
-
-			return res.URI, true
-		},
-	}
-
-	galleryOpts := &gallery.Options{
-		ProvideSource: func(galleryNo int, srcPath string, timestamp *time.Time) (string, bool) {
-			res, ok := s.options.MapImageResource(doc, galleryNo, srcPath)
-			if !ok {
-				return "", false
-			}
-
-			for len(doc.Galleries) <= galleryNo {
-				doc.Galleries = append(
-					doc.Galleries,
-					&Gallery{ElementID: gallery.ElementID(len(doc.Galleries))},
-				)
-			}
-
-			doc.Galleries[galleryNo].AppendImage(res, srcPath, timestamp)
-
-			return res.URI, true
-		},
-	}
-
-	gmark := goldmark.New(
-		goldmark.WithExtensions(
-			yamlblock.New(
-				gallery.NewGalleryAddin(galleryOpts),
-				gpx.NewGPXAddin(gpxOpts),
-			),
-		),
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(),
-		),
-	)
+	gmark := goldmark.New(goldmark.WithRendererOptions(html.WithUnsafe()))
 
 	var buffer bytes.Buffer
 
 	pc := parser.NewContext()
-	yamlblock.SetDocumentPath(pc, path)
 
 	err = gmark.Convert(sourceText, &buffer, parser.WithContext(pc))
 	if err != nil {
@@ -259,5 +211,33 @@ func (s *Store) LoadDocument(path string) (*Document, error) {
 		return nil, fmt.Errorf("could not parse HTML: %w", err)
 	}
 
+	postprocessDocument(doc, s.options)
+
 	return doc, nil
+}
+
+// postprocessDocument modifies the rendered document by replacing links, image and video sources.
+func postprocessDocument(doc *document.Document, opts *StoreOptions) {
+	render.ImplicitFigure(doc)
+
+	toResource := func(original string) (document.Resource, bool) {
+		srcPath := original
+		if !filepath.IsAbs(original) {
+			srcPath = filepath.Join(filepath.Dir(doc.Path), original)
+		}
+		resource, _ := opts.RenderImagePath(doc, srcPath)
+
+		return resource, true
+	}
+
+	render.RecodePaths(doc, toResource)
+
+	// Must be executed in this order, because GPX requires populated galleries.
+	render.EmplaceGalleries(doc, toResource)
+	render.EmplaceGPXMaps(doc, toResource)
+
+	if doc.HasPreview() {
+		previewResource, _ := toResource(doc.Preview)
+		doc.Preview = previewResource.URI
+	}
 }

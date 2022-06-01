@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/data/document"
 )
 
 type RecoderFunc func(original string) (string, bool)
 
-func RecodePaths(doc *document.Document, f RecoderFunc) {
+func RecodePaths(doc *document.Document, toResource MapToResourceFunc) {
 	doc.HTML.Find("img,a").Each(func(i int, s *goquery.Selection) {
 		attribute := "src"
 		if s.Is("a") {
@@ -34,9 +34,9 @@ func RecodePaths(doc *document.Document, f RecoderFunc) {
 			return
 		}
 
-		target, ok := f(src)
+		target, ok := toResource(src)
 		if ok {
-			s.SetAttr(attribute, target)
+			s.SetAttr(attribute, target.URI)
 		}
 	})
 

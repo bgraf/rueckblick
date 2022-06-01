@@ -3,10 +3,11 @@ package document
 import (
 	"bytes"
 	"fmt"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/yuin/goldmark/util"
 	"gopkg.in/yaml.v2"
-	"time"
 )
 
 type FrontMatter struct {
@@ -19,7 +20,7 @@ type FrontMatter struct {
 	Tags     map[string][]string `yaml:"tags,omitempty"`
 }
 
-func readFrontMatter(doc *Document, source []byte) ([]byte, error) {
+func ReadFrontMatter(doc *Document, source []byte) ([]byte, error) {
 	fmSource, mdSource, err := SplitFrontMatterSource(source)
 	if err != nil {
 		return source, fmt.Errorf("read front matter: %w", err)
