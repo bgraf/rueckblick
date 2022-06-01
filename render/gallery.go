@@ -3,6 +3,7 @@ package render
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,6 +16,15 @@ import (
 	"github.com/bgraf/rueckblick/images"
 )
 
+// Name of a markdown document tag for GPX tracks
+const GalleryTagName = "rb-gallery"
+
+// Name of the attribute to specify the photo directory
+const GalleryTagDirectoryAttrName = "directory"
+
+// Name of the attribute to specify the include pattern for file names
+const GalleryTagIncludeAttrName = "include"
+
 type MapToResourceFunc func(original string) (document.Resource, bool)
 
 // EmplaceGalleries replaces each `<rb-gallery ... />` node with a collection of nodes representing
@@ -22,19 +32,19 @@ type MapToResourceFunc func(original string) (document.Resource, bool)
 func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
 	galleryID := -1
 
-	doc.HTML.Find("rb-gallery").Each(func(i int, s *goquery.Selection) {
+	doc.HTML.Find(GalleryTagName).Each(func(i int, s *goquery.Selection) {
 		galleryID++
 
-		photoDir := s.AttrOr("directory", config.DefaultPhotosDirectory())
+		photoDir := s.AttrOr(GalleryTagDirectoryAttrName, config.DefaultPhotosDirectory())
 		if !path.IsAbs(photoDir) {
 			photoDir = path.Join(doc.DocumentDirectory(), photoDir)
 		}
 
-		pat := "*.jpg"
+		pat := s.AttrOr(GalleryTagIncludeAttrName, "*.jpg")
 
 		files, err := collectGalleryImagePaths(photoDir, pat)
 		if err != nil {
-			// TODO: handle error somehow, print it?
+			log.Printf("error while collecting gallery images: %s", err)
 			return
 		}
 

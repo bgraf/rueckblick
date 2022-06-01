@@ -12,6 +12,12 @@ import (
 	"github.com/bgraf/rueckblick/data/gpx"
 )
 
+// Name of a markdown document tag for GPX tracks
+const GPXTagName = "rb-gpx"
+
+// Name of the attribute to specify the track file
+const GPXTagTrackAtteName = "track"
+
 // EmplaceGPXMaps replaces all `<rb-gpx ... />` nodes by a collection of nodes representing
 // an actual Leaflet map.
 //
@@ -19,10 +25,10 @@ import (
 // locations will yield no results.
 func EmplaceGPXMaps(doc *document.Document, toResource MapToResourceFunc) {
 	mapID := -1
-	doc.HTML.Find("rb-gpx").Each(func(i int, s *goquery.Selection) {
+	doc.HTML.Find(GPXTagName).Each(func(i int, s *goquery.Selection) {
 		mapID++
 
-		trackFile := s.AttrOr("track", config.DefaultGPXFile())
+		trackFile := s.AttrOr(GPXTagTrackAtteName, config.DefaultGPXFile())
 		if !path.IsAbs(trackFile) {
 			trackFile = path.Join(doc.DocumentDirectory(), trackFile)
 		}

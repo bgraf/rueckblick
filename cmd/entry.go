@@ -15,6 +15,7 @@ import (
 	"github.com/bgraf/rueckblick/cmd/tools"
 	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/filesystem"
+	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/google/uuid"
 
@@ -299,7 +300,7 @@ func copyGpxTracks(inputDirectory string, entryDirectory string) error {
 	}
 
 	return filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
-		fmt.Fprintln(f, "\n<rb-gpx />")
+		fmt.Fprintf(f, "\n<%s />\n", render.GPXTagName)
 
 		return nil
 	})
