@@ -73,7 +73,15 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 
 	r.UseRawPath = true
 
-	r.SetFuncMap(render.MakeTemplateFuncmap())
+	funcMap := render.MakeTemplateFuncmap()
+
+	funcMap["previewURL"] = func(doc *document.Document) string {
+		guid := rewriter.IDFromPath(doc.PreviewAbsolutePath())
+		url := fmt.Sprintf("/image/%s", guid.String())
+		return url
+	}
+
+	r.SetFuncMap(funcMap)
 
 	// Load templates and static files
 	resourceDir, err := cmd.Flags().GetString("resource-dir")

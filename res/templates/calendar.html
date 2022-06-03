@@ -45,7 +45,7 @@
             {{ if .Document }}
                 <a href="/entry/{{ .Document.GUID }}" title="{{ .Document.Title }}">
                     {{ if .Document.HasPreview }}
-                    <img src="{{ .Document.Preview }}">
+                    <img src="{{ .Document | previewURL }}">
                     {{ else }}
                     <div class="calendar-day-preview-placeholder">
                         <i class="icon-entry-calendar"></i>

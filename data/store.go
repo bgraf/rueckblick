@@ -235,9 +235,4 @@ func postprocessDocument(doc *document.Document, opts *StoreOptions) {
 	// Must be executed in this order, because GPX requires populated galleries.
 	render.EmplaceGalleries(doc, toResource)
 	render.EmplaceGPXMaps(doc, toResource)
-
-	if doc.HasPreview() {
-		previewResource, _ := toResource(doc.Preview)
-		doc.Preview = previewResource.URI
-	}
 }

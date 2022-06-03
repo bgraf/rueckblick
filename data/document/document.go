@@ -2,6 +2,7 @@ package document
 
 import (
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -95,4 +96,12 @@ func (doc *Document) FirstLocationTag() string {
 	}
 
 	return ""
+}
+
+func (doc *Document) PreviewAbsolutePath() string {
+	if filepath.IsAbs(doc.Preview) {
+		return doc.Preview
+	}
+
+	return filepath.Join(doc.DocumentDirectory(), doc.Preview)
 }
