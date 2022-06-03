@@ -18,9 +18,6 @@ func MakeTemplateFuncmap() template.FuncMap {
 		"tagColor": func(tag document.Tag) string {
 			return tagSet.HexColor(tag.String())
 		},
-		"tagIdentifier": func(tag document.Tag) string {
-			return TagIdentifierEscaped(tag.String())
-		},
 		"tagDisplay": func(tag document.Tag) template.HTML {
 			if tag.Category == "location" {
 				return template.HTML(fmt.Sprintf("<i class=\"icon-map-pin-line icon-small\"></i> %s", tag.String()))
