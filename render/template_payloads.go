@@ -3,7 +3,7 @@ package render
 import (
 	"time"
 
-	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/util/dates"
 )
 

@@ -212,11 +212,12 @@ func addGalleryToDocument(opts genGalleryOptions) error {
 	}
 
 	return filesystem.FindAndAppendToMarkdown(opts.DocumentDirectory, func(f io.Writer, path string) error {
-		fmt.Fprintln(f, "\n:: gallery ---")
+		dirAttr := ""
 		if galleryRelPath != config.DefaultPhotosDirectory() {
-			fmt.Fprintf(f, "path: %s\n", galleryRelPath)
+			dirAttr = fmt.Sprintf(`directory="%s"`, galleryRelPath)
 		}
-		fmt.Fprintln(f, "---")
+
+		fmt.Fprintf(f, "\n<rb-gallery %s />\n", dirAttr)
 
 		return nil
 	})

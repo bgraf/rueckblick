@@ -12,7 +12,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/bgraf/rueckblick/config"
-	"github.com/bgraf/rueckblick/document"
+	"github.com/bgraf/rueckblick/data/document"
 	"gopkg.in/yaml.v2"
 
 	"github.com/disintegration/imaging"

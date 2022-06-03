@@ -16,7 +16,7 @@
 <div class="index-entry">
         <div class="index-entry-preview">
             {{ if $doc.HasPreview }}
-                <img src="{{ $doc.Preview }}">
+                <img src="{{ $doc | previewURL }}">
             {{ end }}
         </div>
         <div class="index-entry-description">
@@ -25,7 +25,7 @@
                     {{ $doc.Date.Format "2006-01-02" }}
                 </div>
                 <div>
-                    <a href="/entry/{{ .GUID.String }}">
+                    <a href="{{ . | entryURL }}">
                         <h2>{{ $doc.Title }}</h2>
                     </a>
                 </div>

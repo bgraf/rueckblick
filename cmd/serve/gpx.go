@@ -2,12 +2,13 @@ package serve
 
 import (
 	"encoding/json"
-	"github.com/bgraf/rueckblick/document"
+	"net/http"
+	"time"
+
+	"github.com/bgraf/rueckblick/data/document"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/tkrajina/gpxgo/gpx"
-	"net/http"
-	"time"
 )
 
 func (api *serveAPI) ServeGPX(c *gin.Context) {
