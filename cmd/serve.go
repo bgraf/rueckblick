@@ -35,4 +35,11 @@ func init() {
 		false,
 		"Development mode",
 	)
+
+	serveCmd.Flags().BoolP(
+		"no-browser",
+		"N",
+		false,
+		"Do not start a browser",
+	)
 }

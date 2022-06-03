@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -115,6 +116,20 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	connStr := fmt.Sprintf(":%d", port)
+
+	noBrowser, err := cmd.Flags().GetBool("no-browser")
+	if err != nil {
+		panic(err) // should not happen
+	}
+
+	if !noBrowser {
+		go func() {
+			err := exec.Command("xdg-open", "http://localhost:8000").Run()
+			if err != nil {
+				log.Printf("error during xdg-open: %s", err)
+			}
+		}()
+	}
 
 	if err = r.Run(connStr); err != nil {
 		log.Fatal(err)
