@@ -43,7 +43,7 @@
             <br>
 
             {{ if .Document }}
-                <a href="/entry/{{ .Document.GUID }}" title="{{ .Document.Title }}">
+                <a href="{{ .Document | entryURL }}" title="{{ .Document.Title }}">
                     {{ if .Document.HasPreview }}
                     <img src="{{ .Document | previewURL }}">
                     {{ else }}

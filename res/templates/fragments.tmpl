@@ -5,16 +5,16 @@
 {{end}}
 
 {{define "tag"}}
-    <a href="/tag/{{tagIdentifier .}}"><span class="tag" style="background-color:{{ tagColor . }}">{{ tagDisplay . }}</span></a>
+    <a href="{{ . | tagURL }}"><span class="tag" style="background-color:{{ tagColor . }}">{{ tagDisplay . }}</span></a>
 {{end}}
 
 {{define "icon-bar"}}
 <div class="icon-bar">
 {{ if .HasGallery }}
-    <a href="/entry/{{ .GUID.String }}#{{ .GalleryElementID 0 }}"><i class="icon-gallery-fill"></i></a>
+    <a href="{{ . | entryURL }}#{{ .GalleryElementID 0 }}"><i class="icon-gallery-fill"></i></a>
 {{ end }}
 {{ if .HasMap }}
-    <a href="/entry/{{ .GUID.String }}#{{ .MapElementID 0 }}"><i class="icon-map"></i></a>
+    <a href="{{ . | entryURL }}#{{ .MapElementID 0 }}"><i class="icon-map"></i></a>
 {{ end }}
 </div>
 {{end}}

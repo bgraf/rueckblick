@@ -77,8 +77,15 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 
 	funcMap["previewURL"] = func(doc *document.Document) string {
 		guid := rewriter.IDFromPath(doc.PreviewAbsolutePath())
-		url := fmt.Sprintf("/image/%s", guid.String())
-		return url
+		return fmt.Sprintf("/image/%s", guid.String())
+	}
+
+	funcMap["entryURL"] = func(doc *document.Document) string {
+		return fmt.Sprintf("/entry/%s", doc.GUID.String())
+	}
+
+	funcMap["tagURL"] = func(tag document.Tag) string {
+		return fmt.Sprintf("/tag/%s", render.TagIdentifierEscaped(tag.String()))
 	}
 
 	r.SetFuncMap(funcMap)

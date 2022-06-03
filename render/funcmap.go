@@ -19,7 +19,7 @@ func MakeTemplateFuncmap() template.FuncMap {
 			return tagSet.HexColor(tag.String())
 		},
 		"tagIdentifier": func(tag document.Tag) string {
-			return tagIdentifierEscaped(tag.String())
+			return TagIdentifierEscaped(tag.String())
 		},
 		"tagDisplay": func(tag document.Tag) template.HTML {
 			if tag.Category == "location" {
@@ -72,11 +72,11 @@ func MakeTemplateFuncmap() template.FuncMap {
 
 }
 
-func tagIdentifier(tag string) string {
+func TagIdentifier(tag string) string {
 	tag = document.NormalizeTagName(tag)
 	return tag
 }
 
-func tagIdentifierEscaped(tag string) string {
-	return url.PathEscape(tagIdentifier(tag))
+func TagIdentifierEscaped(tag string) string {
+	return url.PathEscape(TagIdentifier(tag))
 }
