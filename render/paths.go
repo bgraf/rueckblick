@@ -12,7 +12,7 @@ import (
 type RecoderFunc func(original string) (string, bool)
 
 func RecodePaths(doc *document.Document, toResource MapToResourceFunc) {
-	doc.HTML.Find("img,a").Each(func(i int, s *goquery.Selection) {
+	doc.HTML.Find("img,a,source").Each(func(i int, s *goquery.Selection) {
 		attribute := "src"
 		if s.Is("a") {
 			attribute = "href"
