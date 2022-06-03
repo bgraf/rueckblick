@@ -102,7 +102,7 @@ func RunServeCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("exe name lookup: %w", err)
 		}
-		fmt.Printf("exe: %s\n", exePath)
+
 		resourceDir = filepath.Dir(exePath)
 	}
 
