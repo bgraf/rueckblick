@@ -306,6 +306,19 @@ a:hover {
     font-family:sans-serif;
 }
 
+.taglist {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    row-gap: 10px;
+    column-gap: 10px;
+}
+
+.taglist > div {
+    flex: 1 1 auto;
+}
+
 .icon-map-pin-line {
     background-image: url(/static/icon/map-pin-fill.svg);
     background-size: contain;

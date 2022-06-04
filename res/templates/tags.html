@@ -1,7 +1,7 @@
 {{template "header"}}
-<ul>
+<div class="taglist">
 {{range .}}
-    <li>{{template "tag" .}}</li>
+    <div class="taglist-tag">{{template "tag" .}}</div>
 {{end}}
-</ul>
+</div>
 {{template "footer"}}
