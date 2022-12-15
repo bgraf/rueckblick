@@ -320,7 +320,7 @@ a:hover {
 }
 
 .icon-map-pin-line {
-    background-image: url(/static/icon/map-pin-fill.svg);
+    background-image: url(../icon/map-pin-fill.svg);
     background-size: contain;
     width: 24px;
     height: 24px;
@@ -328,7 +328,7 @@ a:hover {
 }
 
 .icon-gallery-fill {
-    background-image: url(/static/icon/gallery-fill.svg);
+    background-image: url(../icon/gallery-fill.svg);
     background-size: cover;
     width: 24px;
     height: 24px;
@@ -336,7 +336,7 @@ a:hover {
 }
 
 .icon-calendar {
-    background-image: url(/static/icon/calendar-2-line.svg);
+    background-image: url(../icon/calendar-2-line.svg);
     background-size: contain;
     width: 24px;
     height: 24px;
@@ -344,7 +344,7 @@ a:hover {
 }
 
 .icon-arrow-left {
-    background-image: url(/static/icon/arrow-left-line.svg);
+    background-image: url(../icon/arrow-left-line.svg);
     background-size: contain;
     width: 24px;
     height: 24px;
@@ -352,7 +352,7 @@ a:hover {
 }
 
 .icon-arrow-right {
-    background-image: url(/static/icon/arrow-right-line.svg);
+    background-image: url(../icon/arrow-right-line.svg);
     background-size: contain;
     width: 24px;
     height: 24px;
@@ -360,7 +360,7 @@ a:hover {
 }
 
 .icon-arrow-s-left {
-    background-image: url(/static/icon/arrow-left-s-line.svg);
+    background-image: url(../icon/arrow-left-s-line.svg);
     background-size: contain;
     width: 24px;
     height: 24px;
@@ -368,7 +368,7 @@ a:hover {
 }
 
 .icon-arrow-s-right {
-    background-image: url(/static/icon/arrow-right-s-line.svg);
+    background-image: url(../icon/arrow-right-s-line.svg);
     background-size: contain;
     width: 24px;
     height: 24px;
@@ -376,7 +376,7 @@ a:hover {
 }
 
 .icon-map {
-    background-image: url(/static/icon/map-2-line.svg);
+    background-image: url(../icon/map-2-line.svg);
     background-size: contain;
     width: 24px;
     height: 24px;
@@ -384,7 +384,7 @@ a:hover {
 }
 
 .icon-mapview-focus {
-    background-image: url(/static/icon/focus-3-line.svg);
+    background-image: url(../icon/focus-3-line.svg);
     background-size: contain;
     width: 24px;
     height: 24px;
@@ -392,7 +392,7 @@ a:hover {
 }
 
 .icon-entry-calendar {
-    background-image: url(/static/icon/file-text-line-96.svg);
+    background-image: url(../icon/file-text-line-96.svg);
     background-size: contain;
     width: 50px;
     height: 50px;

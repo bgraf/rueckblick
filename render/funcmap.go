@@ -58,11 +58,6 @@ func MakeTemplateFuncmap() template.FuncMap {
 			return s
 		},
 
-		"calendarURL": func(t time.Time) string {
-			y, m, _ := t.Date()
-			return fmt.Sprintf("/calendar/%d/%d", y, m)
-		},
-
 		"today":      time.Now,
 		"equalMonth": dates.EqualMonth,
 	}

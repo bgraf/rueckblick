@@ -4,6 +4,7 @@ import "github.com/spf13/viper"
 
 var (
 	KeyJournalDirectory = "journal.directory"
+	KeyBuildDirectory   = "build.directory"
 )
 
 func HasJournalDirectory() bool {
@@ -12,6 +13,14 @@ func HasJournalDirectory() bool {
 
 func JournalDirectory() string {
 	return viper.GetString(KeyJournalDirectory)
+}
+
+func HasBuildDirectory() bool {
+	return viper.IsSet(KeyBuildDirectory)
+}
+
+func BuildDirectory() string {
+	return viper.GetString(KeyBuildDirectory)
 }
 
 func DefaultPhotosDirectory() string {

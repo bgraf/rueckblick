@@ -10,7 +10,6 @@ import (
 type DocumentGroup struct {
 	Documents []*document.Document
 	Date      time.Time
-	HasGap    bool
 }
 
 func MakeDocumentGroups(documents []*document.Document) []DocumentGroup {
@@ -31,8 +30,7 @@ func MakeDocumentGroups(documents []*document.Document) []DocumentGroup {
 			groups = append(
 				groups,
 				DocumentGroup{
-					Date:   ym,
-					HasGap: ym.AddDate(0, 1, 0) != groups[ci].Date,
+					Date: ym,
 				},
 			)
 			ci++

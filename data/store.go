@@ -59,7 +59,7 @@ func NewStore(rootDirectory string, options *StoreOptions) (*Store, error) {
 	return store, nil
 }
 
-func (s *Store) OrderDocumentsByDate() {
+func (s *Store) SortDocumentsByDate() {
 	sort.Slice(s.Documents, func(i, j int) bool {
 		return s.Documents[i].Date.After(s.Documents[j].Date)
 	})
@@ -138,7 +138,7 @@ func (s *Store) Tags() []document.Tag {
 	return s.tags
 }
 
-func (s *Store) OrderTags() {
+func (s *Store) SortTags() {
 	sort.Slice(
 		s.tags,
 		func(i, j int) bool {

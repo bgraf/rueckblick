@@ -117,7 +117,7 @@ func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
 
 			buf.WriteString("<div class=\"gallery-entry\"><a href=\"")
 			buf.WriteString(resPath)
-			buf.WriteString("/file.jpg\"><img class=\"gallery-item\" src=\"")
+			buf.WriteString("\"><img class=\"gallery-item\" src=\"")
 			buf.WriteString(resPath)
 			buf.WriteString("\"")
 

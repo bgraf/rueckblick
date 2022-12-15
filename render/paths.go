@@ -29,7 +29,7 @@ func RecodePaths(doc *document.Document, toResource MapToResourceFunc) {
 			return
 		}
 
-		src, ok := s.Attr(attribute) //TODO: double query of attribute
+		src, ok := s.Attr(attribute)
 		if !ok {
 			return
 		}
