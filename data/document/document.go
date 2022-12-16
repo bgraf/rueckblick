@@ -38,16 +38,17 @@ func (g *Gallery) AppendImage(res Resource, filePath string, timestamp *time.Tim
 
 type Document struct {
 	// File system path
-	Path           string
-	HTML           *goquery.Document // HTML content
-	Title          string
-	Tags           []Tag
-	Date           time.Time
-	Abstract       string
-	Preview        string
-	Galleries      []*Gallery
-	Maps           []GXPMap
-	HasFrontMatter bool
+	Path            string
+	HTML            *goquery.Document // HTML content
+	Title           string
+	Tags            []Tag
+	Date            time.Time
+	Abstract        string
+	Preview         string
+	Galleries       []*Gallery
+	Maps            []GXPMap
+	HasFrontMatter  bool
+	IsHtmlProcessed bool
 }
 
 func (doc *Document) DocumentDirectory() string {

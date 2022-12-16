@@ -31,6 +31,11 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no build directory configured")
 	}
 
+	isCleanBuild, err := cmd.Flags().GetBool("clean")
+	if err != nil {
+		return err
+	}
+
 	journalDirectory := config.JournalDirectory()
 	buildDirectory := config.BuildDirectory()
 
@@ -39,11 +44,6 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 
 	if err := filesystem.CreateDirectoryIfNotExists(buildDirectory); err != nil {
 		return fmt.Errorf("could not ensure build directory: %w", err)
-	}
-
-	// TODO: replace constant "res" by some globally configurable value
-	if err := filesystem.InstallEmbedFS(res.Static, filepath.Join(buildDirectory, "res")); err != nil {
-		return fmt.Errorf("installation of state files failed: %w", err)
 	}
 
 	templates, err := readTemplates()
@@ -56,24 +56,32 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := writeEntryFiles(store, templates, buildDirectory); err != nil {
+	numUpdated, err := processEntryFiles(store, templates, buildDirectory, isCleanBuild)
+	if err != nil {
 		return err
 	}
 
-	if err := writeIndexFile(store, templates, buildDirectory); err != nil {
-		return err
-	}
+	if numUpdated > 0 {
+		if err := writeIndexFile(store, templates, buildDirectory); err != nil {
+			return err
+		}
 
-	if err := writeTagFiles(store, templates, buildDirectory); err != nil {
-		return err
-	}
+		if err := writeTagFiles(store, templates, buildDirectory); err != nil {
+			return err
+		}
 
-	if err := writeTagsIndexFile(store, templates, buildDirectory); err != nil {
-		return err
-	}
+		if err := writeTagsIndexFile(store, templates, buildDirectory); err != nil {
+			return err
+		}
 
-	if err := writeCalendarFiles(store, templates, buildDirectory); err != nil {
-		return err
+		if err := writeCalendarFiles(store, templates, buildDirectory); err != nil {
+			return err
+		}
+
+		// TODO: replace constant "res" by some globally configurable value
+		if err := filesystem.InstallEmbedFS(res.Static, filepath.Join(buildDirectory, "res")); err != nil {
+			return fmt.Errorf("installation of state files failed: %w", err)
+		}
 	}
 
 	log.Println("done")
@@ -225,31 +233,64 @@ func writeTagFiles(store *data.Store, templates *template.Template, buildDirecto
 	return nil
 }
 
-func writeEntryFiles(store *data.Store, templates *template.Template, buildDirectory string) error {
+func processEntryFiles(store *data.Store, templates *template.Template, buildDirectory string, isCleanBuild bool) (int, error) {
+	numUpdated := 0
+
 	for _, doc := range store.Documents {
-		// Extract body fragment
-		fragment, err := doc.HTML.Find("body").Html()
-		if err != nil {
-			// TODO: log
-			return fmt.Errorf("failed to build document: %w", err)
+		performUpdate := true
+
+		if !isCleanBuild {
+			documentModTime, err := filesystem.FullSubtreeModifiedDate(doc.DocumentDirectory())
+			if err != nil {
+				return 0, err
+			}
+
+			entryFile := filepath.Join(buildDirectory, entryFileName(doc))
+			resultModTime, err := filesystem.FileModifiedTime(entryFile)
+			if err != nil {
+				return 0, err
+			}
+
+			performUpdate = resultModTime.Before(documentModTime)
 		}
 
-		var buf bytes.Buffer
-
-		templates.ExecuteTemplate(&buf, "entry.html", map[string]interface{}{
-			"Document": doc,
-			"Fragment": template.HTML(fragment),
-		})
-
-		entryFile := filepath.Join(buildDirectory, entryFileName(doc))
-
-		err = os.WriteFile(entryFile, buf.Bytes(), 0666)
-		if err != nil {
-			log.Printf("could not write entry file: %s", err)
+		if !performUpdate {
+			continue
 		}
 
-		log.Printf("rendered entry '%s'", entryFile)
+		if err := writeEntryFile(store, doc, templates, buildDirectory); err != nil {
+			return 0, err
+		}
+
+		numUpdated++
 	}
+
+	return numUpdated, nil
+}
+
+func writeEntryFile(store *data.Store, doc *document.Document, templates *template.Template, buildDirectory string) error {
+	// Extract body fragment
+	fragment, err := store.GetHtmlFragment(doc)
+	if err != nil {
+		// TODO: log
+		return fmt.Errorf("failed to build document: %w", err)
+	}
+
+	var buf bytes.Buffer
+
+	templates.ExecuteTemplate(&buf, "entry.html", map[string]interface{}{
+		"Document": doc,
+		"Fragment": template.HTML(fragment),
+	})
+
+	entryFile := filepath.Join(buildDirectory, entryFileName(doc))
+
+	err = os.WriteFile(entryFile, buf.Bytes(), 0666)
+	if err != nil {
+		log.Printf("could not write entry file: %s", err)
+	}
+
+	log.Printf("rendered entry '%s'", entryFile)
 
 	return nil
 }

@@ -107,6 +107,14 @@ func (s *Store) SortTags() {
 	)
 }
 
+func (s *Store) GetHtmlFragment(doc *document.Document) (string, error) {
+	if !doc.IsHtmlProcessed {
+		postprocessDocument(doc, s.options)
+	}
+
+	return doc.HTML.Find("body").Html()
+}
+
 func (s *Store) loadDocuments(rootDirectory string) ([]*document.Document, error) {
 	var docs []*document.Document
 
@@ -147,7 +155,8 @@ func (s *Store) loadDocument(path string) (*document.Document, error) {
 	}
 
 	doc := &document.Document{
-		Path: path,
+		Path:            path,
+		IsHtmlProcessed: false,
 	}
 
 	sourceText, err = document.ReadFrontMatter(doc, sourceText)
@@ -171,8 +180,6 @@ func (s *Store) loadDocument(path string) (*document.Document, error) {
 		return nil, fmt.Errorf("could not parse HTML: %w", err)
 	}
 
-	postprocessDocument(doc, s.options)
-
 	return doc, nil
 }
 
@@ -195,4 +202,6 @@ func postprocessDocument(doc *document.Document, opts *StoreOptions) {
 	// Must be executed in this order, because GPX requires populated galleries.
 	render.EmplaceGalleries(doc, toResource)
 	render.EmplaceGPXMaps(doc, toResource)
+
+	doc.IsHtmlProcessed = true
 }
