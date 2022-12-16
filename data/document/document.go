@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/google/uuid"
 )
 
 type GXPMap struct {
@@ -41,7 +40,6 @@ type Document struct {
 	// File system path
 	Path           string
 	HTML           *goquery.Document // HTML content
-	GUID           uuid.UUID
 	Title          string
 	Tags           []Tag
 	Date           time.Time

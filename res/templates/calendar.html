@@ -1,21 +1,29 @@
 {{template "header"}}
 
 <div class="calendar-nav">
+    {{ if .HasPrevYear }}
     <a href ="{{ .PrevYear | calendarURL }}">
         <i class="icon-arrow-s-left"></i>
     </a>
+    {{ end }}
+    {{ if .HasPrevMonth }}
     <a href ="{{ .PrevMonth | calendarURL }}">
         <i class="icon-arrow-left"></i>
     </a>
+    {{ end }}
     <span class="calendar-yearmonth">
         {{ .Month | yearMonthDisplay }}
     </span>
+    {{ if .HasNextMonth }}
     <a href ="{{ .NextMonth | calendarURL }}">
-    <i class="icon-arrow-right"></i>
+        <i class="icon-arrow-right"></i>
     </a>
+    {{ end }}
+    {{ if .HasNextYear }}
     <a href ="{{ .NextYear | calendarURL }}">
         <i class="icon-arrow-s-right"></i>
     </a>
+    {{ end }}
 </div>
 
 <div class="calendar-frame">

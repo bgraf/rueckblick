@@ -17,7 +17,6 @@ import (
 	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
-	"github.com/google/uuid"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -178,16 +177,10 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	guid, err := uuid.NewRandom()
-	if err != nil {
-		return fmt.Errorf("generate UUID: %w", err)
-	}
-
 	frontMatter := document.FrontMatter{
 		Title:    title,
 		Date:     document.YamlDate(date),
 		Author:   author,
-		GUID:     guid,
 		Tags:     tagMap,
 		Abstract: abstract,
 	}
@@ -215,7 +208,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create entry directory
-	err = os.MkdirAll(entryDir, 0700)
+	err := os.MkdirAll(entryDir, 0700)
 	if err != nil {
 		log.Fatal(err)
 	}

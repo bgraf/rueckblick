@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/yuin/goldmark/util"
 	"gopkg.in/yaml.v2"
 )
@@ -16,7 +15,6 @@ type FrontMatter struct {
 	Author   string              `yaml:"author"`
 	Preview  string              `yaml:"preview,omitempty"`
 	Abstract string              `yaml:"abstract,omitempty"`
-	GUID     uuid.UUID           `yaml:"guid,omitempty"`
 	Tags     map[string][]string `yaml:"tags,omitempty"`
 }
 
@@ -33,18 +31,10 @@ func ReadFrontMatter(doc *Document, source []byte) ([]byte, error) {
 		return source, fmt.Errorf("parse YAML: %w", err)
 	}
 
-	if fm.GUID.ID() == 0 {
-		fm.GUID, err = uuid.NewRandom()
-		if err != nil {
-			return source, fmt.Errorf("new random UUID")
-		}
-	}
-
 	doc.Title = fm.Title
 	doc.Date = time.Time(fm.Date)
 	doc.Abstract = fm.Abstract
 	doc.Preview = fm.Preview
-	doc.GUID = fm.GUID
 
 	for category, names := range fm.Tags {
 		for _, name := range names {

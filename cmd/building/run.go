@@ -19,7 +19,6 @@ import (
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/res"
 	"github.com/bgraf/rueckblick/util/dates"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -83,12 +82,20 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+type isValidDate = func(t time.Time) bool
+
 func writeCalendarFiles(store *data.Store, templates *template.Template, buildDirectory string) error {
 	end := dates.FirstDayOfMonth(store.Documents[0].Date).AddDate(0, 0, 1)
 	first := dates.FirstDayOfMonth(store.Documents[len(store.Documents)-1].Date)
 
-	for !first.After(end) {
-		if err := writeCalendarFile(store, templates, buildDirectory, first.Year(), int(first.Month())); err != nil {
+	isValid := func(first, last time.Time) isValidDate {
+		return func(t time.Time) bool {
+			return !t.Before(first) && t.Before(last)
+		}
+	}(first, end)
+
+	for first.Before(end) {
+		if err := writeCalendarFile(store, templates, buildDirectory, first.Year(), int(first.Month()), isValid); err != nil {
 			return err
 		}
 
@@ -98,7 +105,7 @@ func writeCalendarFiles(store *data.Store, templates *template.Template, buildDi
 	return nil
 }
 
-func writeCalendarFile(store *data.Store, templates *template.Template, buildDirectory string, year, month int) error {
+func writeCalendarFile(store *data.Store, templates *template.Template, buildDirectory string, year, month int, isValidDate isValidDate) error {
 	type calendarDay struct {
 		Date     time.Time
 		Document *document.Document
@@ -126,17 +133,25 @@ func writeCalendarFile(store *data.Store, templates *template.Template, buildDir
 
 	currMonth := dates.FromYM(year, month)
 
+	prevMonth := dates.AddMonths(currMonth, -1)
+	nextMonth := dates.AddMonths(currMonth, 1)
+	prevYear := dates.AddYears(currMonth, -1)
+	nextYear := dates.AddYears(currMonth, 1)
+
 	var buf bytes.Buffer
 	templates.ExecuteTemplate(&buf, "calendar.html", map[string]interface{}{
-		"Month":     currMonth,
-		"PrevMonth": dates.AddMonths(currMonth, -1),
-		"NextMonth": dates.AddMonths(currMonth, 1),
-		"PrevYear":  dates.AddYears(currMonth, -1),
-		"NextYear":  dates.AddYears(currMonth, 1),
-		"Days":      calendarDays,
+		"Month":        currMonth,
+		"PrevMonth":    prevMonth,
+		"NextMonth":    nextMonth,
+		"PrevYear":     prevYear,
+		"NextYear":     nextYear,
+		"HasPrevMonth": isValidDate(prevMonth),
+		"HasNextMonth": isValidDate(nextMonth),
+		"HasPrevYear":  isValidDate(prevYear),
+		"HasNextYear":  isValidDate(nextYear),
+		"Days":         calendarDays,
 	})
 
-	// TODO: write to file
 	fileName := calendarFileName(year, month)
 
 	calendarFilePath := filepath.Join(buildDirectory, fileName)
@@ -263,10 +278,8 @@ func normalizeFileName(s string) string {
 func readStore(journalDirectory string) (*data.Store, error) {
 	storeOpts := &data.StoreOptions{
 		RenderImagePath: func(doc *document.Document, srcPath string) (document.Resource, bool) {
-			guid := uuid.New()
 			res := document.Resource{
-				GUID: guid,
-				URI:  fmt.Sprintf("file://%s", srcPath),
+				URI: fmt.Sprintf("file://%s", srcPath),
 			}
 			return res, true
 		},

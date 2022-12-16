@@ -15,7 +15,6 @@ import (
 	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
-	"github.com/google/uuid"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
@@ -41,7 +40,7 @@ func NewStore(rootDirectory string, options *StoreOptions) (*Store, error) {
 	}
 
 	var err error
-	store.Documents, err = store.LoadDocuments(rootDirectory)
+	store.Documents, err = store.loadDocuments(rootDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("load documents failed: %w", err)
 	}
@@ -65,16 +64,6 @@ func (s *Store) SortDocumentsByDate() {
 	})
 }
 
-func (s *Store) DocumentByGUID(guid uuid.UUID) *document.Document {
-	for _, doc := range s.Documents {
-		if doc.GUID == guid {
-			return doc
-		}
-	}
-
-	return nil
-}
-
 func (s *Store) DocumentsOnDate(t time.Time) []*document.Document {
 	var docs []*document.Document
 
@@ -85,27 +74,6 @@ func (s *Store) DocumentsOnDate(t time.Time) []*document.Document {
 	}
 
 	return docs
-}
-
-func (s *Store) ReloadByGUID(guid uuid.UUID) (*document.Document, error) {
-	doc := s.DocumentByGUID(guid)
-	if doc == nil {
-		return nil, fmt.Errorf("no such document")
-	}
-
-	newDoc, err := s.LoadDocument(doc.Path)
-	if err != nil {
-		return nil, fmt.Errorf("new document failed: %w", err)
-	}
-
-	newDoc.GUID = doc.GUID
-	for i, doc := range s.Documents {
-		if newDoc.GUID == doc.GUID {
-			s.Documents[i] = newDoc
-		}
-	}
-
-	return newDoc, nil
 }
 
 func (s *Store) DocumentsByTagName(name string) []*document.Document {
@@ -126,14 +94,6 @@ func (s *Store) DocumentsByTagName(name string) []*document.Document {
 	return result
 }
 
-func (s *Store) TagByName(name string) (document.Tag, bool) {
-	if tag, ok := s.tagByNormalizedName[document.NormalizeTagName(name)]; ok {
-		return tag, true
-	}
-
-	return document.Tag{}, false
-}
-
 func (s *Store) Tags() []document.Tag {
 	return s.tags
 }
@@ -147,7 +107,7 @@ func (s *Store) SortTags() {
 	)
 }
 
-func (s *Store) LoadDocuments(rootDirectory string) ([]*document.Document, error) {
+func (s *Store) loadDocuments(rootDirectory string) ([]*document.Document, error) {
 	var docs []*document.Document
 
 	err := filepath.WalkDir(rootDirectory, func(path string, d fs.DirEntry, err error) error {
@@ -164,7 +124,7 @@ func (s *Store) LoadDocuments(rootDirectory string) ([]*document.Document, error
 			return nil
 		}
 
-		doc, err := s.LoadDocument(path)
+		doc, err := s.loadDocument(path)
 		if err != nil {
 			return err
 		}
@@ -180,7 +140,7 @@ func (s *Store) LoadDocuments(rootDirectory string) ([]*document.Document, error
 	return docs, nil
 }
 
-func (s *Store) LoadDocument(path string) (*document.Document, error) {
+func (s *Store) loadDocument(path string) (*document.Document, error) {
 	sourceText, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not read source file: %w", err)

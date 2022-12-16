@@ -7,10 +7,6 @@ type Tag struct {
 	Category string
 }
 
-func (t Tag) HasCategory() bool {
-	return len(t.Category) > 0
-}
-
 func (t Tag) String() string {
 	return t.Raw
 }
