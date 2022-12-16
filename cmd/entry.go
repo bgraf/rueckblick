@@ -293,7 +293,7 @@ func copyGpxTracks(inputDirectory string, entryDirectory string) error {
 	}
 
 	return filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
-		fmt.Fprintf(f, "\n<%s />\n", render.GPXTagName)
+		fmt.Fprintf(f, "\n<%s></%s>\n", render.GPXTagName, render.GPXTagName)
 
 		return nil
 	})

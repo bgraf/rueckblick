@@ -14,6 +14,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/filesystem"
+	"github.com/bgraf/rueckblick/render"
 	"github.com/spf13/cobra"
 )
 
@@ -214,10 +215,10 @@ func addGalleryToDocument(opts genGalleryOptions) error {
 	return filesystem.FindAndAppendToMarkdown(opts.DocumentDirectory, func(f io.Writer, path string) error {
 		dirAttr := ""
 		if galleryRelPath != config.DefaultPhotosDirectory() {
-			dirAttr = fmt.Sprintf(`directory="%s"`, galleryRelPath)
+			dirAttr = fmt.Sprintf(`%s="%s"`, render.GalleryTagDirectoryAttrName, galleryRelPath)
 		}
 
-		fmt.Fprintf(f, "\n<rb-gallery %s />\n", dirAttr)
+		fmt.Fprintf(f, "\n<%s %s></%s>\n", render.GalleryTagName, dirAttr, render.GalleryTagName)
 
 		return nil
 	})
