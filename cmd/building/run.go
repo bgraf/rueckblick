@@ -2,6 +2,7 @@ package building
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -248,10 +249,14 @@ func processEntryFiles(store *data.Store, templates *template.Template, buildDir
 			entryFile := filepath.Join(buildDirectory, entryFileName(doc))
 			resultModTime, err := filesystem.FileModifiedTime(entryFile)
 			if err != nil {
-				return 0, err
+				if errors.Is(err, os.ErrNotExist) {
+					performUpdate = true
+				} else {
+					return 0, err
+				}
+			} else {
+				performUpdate = resultModTime.Before(documentModTime)
 			}
-
-			performUpdate = resultModTime.Before(documentModTime)
 		}
 
 		if !performUpdate {
@@ -362,7 +367,7 @@ func readTemplates() (*template.Template, error) {
 	}
 
 	// TODO: replace by relative string or embed
-	templates, err := template.New("").Funcs(funcMap).ParseGlob("res/templates/*")
+	templates, err := template.New("").Funcs(funcMap).ParseFS(res.Templates, "templates/*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to load templates: %w", err)
 	}
