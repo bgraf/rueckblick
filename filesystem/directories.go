@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+func Abs(p string) string {
+	p, err := filepath.Abs(p)
+	if err != nil {
+		panic(err)
+	}
+
+	return p
+}
+
 func CreateDirectoryIfNotExists(path string) error {
 	return os.MkdirAll(path, 0777)
 }

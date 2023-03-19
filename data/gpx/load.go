@@ -90,8 +90,6 @@ func findClosestPointInTime(points []GPXPoint, targetTime time.Time) (GPXPoint, 
 		if durI <= durBest {
 			durBest = durI
 			iBest = i
-		} else {
-			return points[i-1], durBest
 		}
 	}
 

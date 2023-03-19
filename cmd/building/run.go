@@ -37,8 +37,8 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	journalDirectory := config.JournalDirectory()
-	buildDirectory := config.BuildDirectory()
+	journalDirectory := filesystem.Abs(config.JournalDirectory())
+	buildDirectory := filesystem.Abs(config.BuildDirectory())
 
 	log.Printf("journal directory: %s", journalDirectory)
 	log.Printf("build directory:   %s", buildDirectory)
