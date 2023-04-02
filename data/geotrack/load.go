@@ -1,12 +1,13 @@
-package gpx
+package geotrack
 
 import (
 	"encoding/json"
 	"fmt"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/bgraf/rueckblick/data/document"
-	"github.com/tkrajina/gpxgo/gpx"
 )
 
 type GPXLocatedImage struct {
@@ -23,30 +24,24 @@ func (p GPXPoint) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]float64{p.Lat, p.Lon})
 }
 
-func LoadGPX(doc *document.Document, gpxFilePath string) ([]GPXPoint, []GPXLocatedImage, error) {
-	gpxData, err := gpx.ParseFile(gpxFilePath)
+// LoadTrack loads a track file from the given file path and correlates the documents images with
+// the track's points.
+func LoadTrack(doc *document.Document, trackFilePath string) (points []GPXPoint, images []GPXLocatedImage, err error) {
+	ext := strings.ToLower(path.Ext(trackFilePath))
+	if ext == ".gpx" {
+		points, err = loadGPXTrack(trackFilePath)
+	} else if ext == ".txt" {
+		points, err = loadNMEATrack(trackFilePath)
+	} else {
+		return nil, nil, fmt.Errorf("unknown track extension '%s'", ext)
+	}
+
 	if err != nil {
-		return nil, nil, fmt.Errorf("read GPX file: %w", err)
+		return
 	}
 
-	track := readGPXTrack(gpxData)
-	locatedImages := findMatchingImages(doc, track)
-
-	return track, locatedImages, nil
-}
-
-func readGPXTrack(gpxFile *gpx.GPX) []GPXPoint {
-	var points []GPXPoint
-
-	for _, track := range gpxFile.Tracks {
-		for _, segment := range track.Segments {
-			for _, p := range segment.Points {
-				points = append(points, GPXPoint{Lat: p.Latitude, Lon: p.Longitude, Time: p.Timestamp})
-			}
-		}
-	}
-
-	return points
+	images = findMatchingImages(doc, points)
+	return
 }
 
 func findMatchingImages(doc *document.Document, points []GPXPoint) []GPXLocatedImage {

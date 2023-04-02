@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -149,7 +149,7 @@ func (s *Store) loadDocuments(rootDirectory string) ([]*document.Document, error
 }
 
 func (s *Store) loadDocument(path string) (*document.Document, error) {
-	sourceText, err := ioutil.ReadFile(path)
+	sourceText, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not read source file: %w", err)
 	}

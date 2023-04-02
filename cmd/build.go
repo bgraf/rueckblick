@@ -18,7 +18,10 @@ func init() {
 	rootCmd.AddCommand(buildCmd)
 
 	buildCmd.Flags().StringP("output", "O", "", "Build directory")
-	viper.BindPFlag("build.directory", buildCmd.Flags().Lookup("output"))
+	err := viper.BindPFlag("build.directory", buildCmd.Flags().Lookup("output"))
+	if err != nil {
+		panic(err)
+	}
 
 	buildCmd.Flags().BoolP("clean", "C", false, "Clean build everything")
 }

@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/PuerkitoBio/goquery v1.8.1
+	github.com/adrianmo/go-nmea v1.8.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/goodsign/monday v1.0.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
@@ -29,7 +30,6 @@ require (
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/spf13/afero v1.9.5 // indirect

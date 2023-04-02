@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -165,7 +164,7 @@ func includeInFrontMatter(cwd string, outputFilePath string) error {
 	// Write document to temporary file
 	var newFile string
 	{
-		f, err := ioutil.TempFile(cwd, "tmp-rb.*.md")
+		f, err := os.CreateTemp(cwd, "tmp-rb.*.md")
 		if err != nil {
 			return err
 		}
@@ -211,7 +210,7 @@ func includeInFrontMatter(cwd string, outputFilePath string) error {
 func readFrontMatterAndSource(file string) (document.FrontMatter, []byte, error) {
 	var fm document.FrontMatter
 
-	source, err := ioutil.ReadFile(file)
+	source, err := os.ReadFile(file)
 	if err != nil {
 		return fm, nil, err
 	}

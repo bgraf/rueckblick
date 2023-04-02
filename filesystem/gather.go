@@ -2,7 +2,6 @@ package filesystem
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,7 +46,7 @@ func GatherFiles(roots []string, extensions []string) ([]string, error) {
 			}
 
 		} else if fi.Mode().IsDir() {
-			files, err := ioutil.ReadDir(root)
+			files, err := os.ReadDir(root)
 			if err != nil {
 				return nil, fmt.Errorf("read dir: %w", err)
 			}

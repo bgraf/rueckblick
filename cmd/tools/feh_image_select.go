@@ -2,7 +2,7 @@ package tools
 
 import (
 	"bufio"
-	"io/ioutil"
+	"io"
 	"os/exec"
 	"syscall"
 )
@@ -39,7 +39,7 @@ func FehSelectImage(directory string) (string, error) {
 		}
 	}
 
-	_, err = ioutil.ReadAll(cmdStdout)
+	_, err = io.ReadAll(cmdStdout)
 	if err != nil {
 		return resultPath, err
 	}

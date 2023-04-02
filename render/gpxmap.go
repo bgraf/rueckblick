@@ -9,7 +9,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/data/document"
-	"github.com/bgraf/rueckblick/data/gpx"
+	"github.com/bgraf/rueckblick/data/geotrack"
 )
 
 // Name of a markdown document tag for GPX tracks
@@ -33,7 +33,7 @@ func EmplaceGPXMaps(doc *document.Document, toResource MapToResourceFunc) {
 			trackFile = path.Join(doc.DocumentDirectory(), trackFile)
 		}
 
-		points, images, err := gpx.LoadGPX(doc, trackFile)
+		points, images, err := geotrack.LoadTrack(doc, trackFile)
 		if err != nil {
 			panic(err)
 		}

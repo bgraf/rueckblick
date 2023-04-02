@@ -246,32 +246,21 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 }
 
 func copyGpxTracks(inputDirectory string, entryDirectory string) error {
-	// Gather all GPX
-	filePaths, err := filesystem.GatherFiles([]string{inputDirectory}, []string{".gpx"})
+	// Gather all GPX or NMEA tracks. (NMEA tracks may have .txt extensions)
+	filePaths, err := filesystem.GatherFiles([]string{inputDirectory}, []string{".gpx", ".txt"})
 	if err != nil {
 		return fmt.Errorf("scanning files: %w", err)
 	} else if len(filePaths) == 0 {
 		return nil
 	}
 
-	fmt.Printf("files :%#v\n", filePaths)
+	// Copy all track files to the journal directory.
+	for _, inPath := range filePaths {
+		outPath := path.Join(entryDirectory, path.Base(inPath))
 
-	// copy tracks
-	if len(filePaths) == 1 {
-		outPath := path.Join(entryDirectory, config.DefaultGPXFile())
-
-		err := filesystem.Copy(filePaths[0], outPath)
+		err := filesystem.Copy(inPath, outPath)
 		if err != nil {
 			return err
-		}
-	} else {
-		for _, inPath := range filePaths {
-			outPath := path.Join(entryDirectory, path.Base(inPath))
-
-			err := filesystem.Copy(inPath, outPath)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
@@ -292,11 +281,20 @@ func copyGpxTracks(inputDirectory string, entryDirectory string) error {
 		return nil
 	}
 
-	return filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
-		fmt.Fprintf(f, "\n<%s></%s>\n", render.GPXTagName, render.GPXTagName)
+	// Add all tracks to the document.
+	for _, inPath := range filePaths {
+		name := path.Base(inPath)
+		err := filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
+			fmt.Fprintf(f, "\n<%s track=\"%s\"></%s>\n", render.GPXTagName, name, render.GPXTagName)
+			return nil
+		})
 
-		return nil
-	})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func generateGallery(photosDirectory string, documentDirectory string) error {
