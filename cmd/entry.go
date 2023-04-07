@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -22,6 +23,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/bgraf/rueckblick/config"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
@@ -99,77 +101,55 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 	filterSuggestions := func(known []string) func(toComplete string) []string {
 		return func(toComplete string) []string {
+			ranks := fuzzy.RankFindFold(toComplete, known)
+			sort.Sort(ranks)
+
+			fmt.Printf("%v\n", ranks)
+
 			var suggestions []string
-			for _, loc := range known {
-				if strings.HasPrefix(strings.ToLower(loc), strings.ToLower(toComplete)) {
-					suggestions = append(suggestions, loc)
-				}
+			for _, rank := range ranks {
+				suggestions = append(suggestions, rank.Target)
 			}
+
 			return suggestions
 		}
 	}
 
-	var (
-		locations []string
-		people    []string
-		tags      []string
-	)
-
-	for {
-		prompt := survey.Input{
-			Message: "Location",
-			Suggest: filterSuggestions(knownTags["location"]),
-		}
-		location := ""
-		err := survey.AskOne(&prompt, &location)
-		exitOnInterrupt(err)
-
-		location = strings.TrimSpace(location)
-		if len(location) > 0 {
-			fmt.Println()
-			locations = append(locations, location)
-			continue
-		}
-
-		break
+	tagPrompts := []struct {
+		message  string
+		category string
+	}{
+		{"Location", "location"},
+		{"People", "people"},
+		{"Tag", "general"},
 	}
 
-	for {
-		prompt := survey.Input{
-			Message: "People",
-			Suggest: filterSuggestions(knownTags["people"]),
-		}
-		person := ""
-		err := survey.AskOne(&prompt, &person)
-		exitOnInterrupt(err)
+	tagMap := make(map[string][]string)
 
-		person = strings.TrimSpace(person)
-		if len(person) > 0 {
-			fmt.Println()
-			people = append(people, person)
-			continue
-		}
+	for _, tagPrompt := range tagPrompts {
+		var results []string
 
-		break
-	}
+		for {
+			prompt := survey.Input{
+				Message: tagPrompt.message,
+				Suggest: filterSuggestions(knownTags[tagPrompt.category]),
+			}
+			result := ""
+			err := survey.AskOne(&prompt, &result)
+			exitOnInterrupt(err)
 
-	for {
-		prompt := survey.Input{
-			Message: "Tag",
-			Suggest: filterSuggestions(knownTags["general"]),
-		}
-		tag := ""
-		err := survey.AskOne(&prompt, &tag)
-		exitOnInterrupt(err)
+			result = strings.TrimSpace(result)
+			if len(result) > 0 {
+				results = append(results, result)
+				continue
+			}
 
-		tag = strings.TrimSpace(tag)
-		if len(tag) > 0 {
-			fmt.Println()
-			tags = append(tags, tag)
-			continue
+			break
 		}
 
-		break
+		if len(results) > 0 {
+			tagMap[tagPrompt.category] = results
+		}
 	}
 
 	var abstract string
@@ -210,19 +190,8 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 	// Setup front matter
 
-	var tagMap map[string][]string
-	nTags := len(tags) + len(locations)
-	if nTags > 0 {
-		tagMap = make(map[string][]string)
-		if len(tags) > 0 {
-			tagMap["general"] = tags
-		}
-		if len(locations) > 0 {
-			tagMap["location"] = locations
-		}
-		if len(people) > 0 {
-			tagMap["people"] = people
-		}
+	if len(tagMap) == 0 {
+		tagMap = nil
 	}
 
 	frontMatter := document.FrontMatter{
