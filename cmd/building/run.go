@@ -52,7 +52,7 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	store, err := readStore(journalDirectory)
+	store, err := data.NewDefaultStore(journalDirectory)
 	if err != nil {
 		return err
 	}
@@ -334,31 +334,6 @@ var fileNameNormalizationPattern = regexp.MustCompile("[^a-z0-9]")
 func normalizeFileName(s string) string {
 	s = strings.TrimSpace(strings.ToLower(s))
 	return fileNameNormalizationPattern.ReplaceAllString(s, "_")
-}
-
-func readStore(journalDirectory string) (*data.Store, error) {
-	storeOpts := &data.StoreOptions{
-		RenderImagePath: func(doc *document.Document, srcPath string) (document.Resource, bool) {
-			res := document.Resource{
-				URI: fmt.Sprintf("file://%s", srcPath),
-			}
-			return res, true
-		},
-	}
-
-	store, err := data.NewStore(
-		journalDirectory,
-		storeOpts,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	store.SortDocumentsByDate()
-	store.SortTags()
-
-	return store, nil
 }
 
 func readTemplates() (*template.Template, error) {

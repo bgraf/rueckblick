@@ -13,6 +13,7 @@ import (
 	"unicode"
 
 	"github.com/bgraf/rueckblick/cmd/tools"
+	"github.com/bgraf/rueckblick/data"
 	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/render"
@@ -56,6 +57,15 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	journalDirectory := filesystem.Abs(config.JournalDirectory())
+
+	// Read store to access the tags for auto-completion
+	// TODO: only read the tags of all documents, do not process the whole store...
+	store, err := data.NewDefaultStore(journalDirectory)
+	if err != nil {
+		return err
+	}
+
 	date := promptDate(inputDirectory)
 
 	// Read title
@@ -81,49 +91,65 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		exitOnInterrupt(err)
 	}
 
+	// Group tags by category
+	knownTags := make(map[string][]string)
+	for _, tag := range store.Tags() {
+		knownTags[tag.Category] = append(knownTags[tag.Category], tag.String())
+	}
+
+	filterSuggestions := func(known []string) func(toComplete string) []string {
+		return func(toComplete string) []string {
+			var suggestions []string
+			for _, loc := range known {
+				if strings.HasPrefix(strings.ToLower(loc), strings.ToLower(toComplete)) {
+					suggestions = append(suggestions, loc)
+				}
+			}
+			return suggestions
+		}
+	}
+
 	var (
 		locations []string
 		tags      []string
 	)
 
-	{
+	for {
 		prompt := survey.Input{
 			Message: "Location",
+			Suggest: filterSuggestions(knownTags["location"]),
 		}
-		for {
-			location := ""
-			err := survey.AskOne(&prompt, &location)
-			exitOnInterrupt(err)
+		location := ""
+		err := survey.AskOne(&prompt, &location)
+		exitOnInterrupt(err)
 
-			location = strings.TrimSpace(location)
-			if len(location) > 0 {
-				fmt.Println()
-				locations = append(locations, location)
-				continue
-			}
-
-			break
+		location = strings.TrimSpace(location)
+		if len(location) > 0 {
+			fmt.Println()
+			locations = append(locations, location)
+			continue
 		}
+
+		break
 	}
 
-	{
+	for {
 		prompt := survey.Input{
 			Message: "Tag",
+			Suggest: filterSuggestions(knownTags["general"]),
 		}
-		for {
-			tag := ""
-			err := survey.AskOne(&prompt, &tag)
-			exitOnInterrupt(err)
+		tag := ""
+		err := survey.AskOne(&prompt, &tag)
+		exitOnInterrupt(err)
 
-			tag = strings.TrimSpace(tag)
-			if len(tag) > 0 {
-				fmt.Println()
-				tags = append(tags, tag)
-				continue
-			}
-
-			break
+		tag = strings.TrimSpace(tag)
+		if len(tag) > 0 {
+			fmt.Println()
+			tags = append(tags, tag)
+			continue
 		}
+
+		break
 	}
 
 	var abstract string
@@ -153,10 +179,9 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 	dateStr := dates.DateString(date)
 
-	journalDir := config.JournalDirectory()
 	normTitle := normalizeTitle(title)
 	entryDirName := fmt.Sprintf("%s-%s", dateStr, normTitle)
-	entryDir := filepath.Join(journalDir, fmt.Sprint(date.Year()), entryDirName)
+	entryDir := filepath.Join(journalDirectory, fmt.Sprint(date.Year()), entryDirName)
 	entryFileName := fmt.Sprintf("%s.md", dateStr)
 	entryFile := filepath.Join(entryDir, entryFileName)
 
@@ -208,7 +233,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create entry directory
-	err := os.MkdirAll(entryDir, 0700)
+	err = os.MkdirAll(entryDir, 0700)
 	if err != nil {
 		log.Fatal(err)
 	}
