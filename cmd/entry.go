@@ -104,8 +104,6 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 			ranks := fuzzy.RankFindFold(toComplete, known)
 			sort.Sort(ranks)
 
-			fmt.Printf("%v\n", ranks)
-
 			var suggestions []string
 			for _, rank := range ranks {
 				suggestions = append(suggestions, rank.Target)
