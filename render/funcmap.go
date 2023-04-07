@@ -23,6 +23,10 @@ func MakeTemplateFuncmap() template.FuncMap {
 				return template.HTML(fmt.Sprintf("<i class=\"icon-map-pin-line icon-small\"></i> %s", tag.String()))
 			}
 
+			if tag.Category == "people" {
+				return template.HTML(fmt.Sprintf("<i class=\"icon-user icon-small\"></i> %s", tag.String()))
+			}
+
 			return template.HTML(tag.String())
 		},
 		"isFirstOfWeek": func(t time.Time) bool {

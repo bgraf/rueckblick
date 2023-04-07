@@ -383,6 +383,14 @@ a:hover {
     display: inline-block;
 }
 
+.icon-user {
+    background-image: url(../icon/user-fill.svg);
+    background-size: contain;
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+}
+
 .icon-mapview-focus {
     background-image: url(../icon/focus-3-line.svg);
     background-size: contain;

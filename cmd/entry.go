@@ -111,6 +111,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 	var (
 		locations []string
+		people    []string
 		tags      []string
 	)
 
@@ -127,6 +128,25 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		if len(location) > 0 {
 			fmt.Println()
 			locations = append(locations, location)
+			continue
+		}
+
+		break
+	}
+
+	for {
+		prompt := survey.Input{
+			Message: "People",
+			Suggest: filterSuggestions(knownTags["people"]),
+		}
+		person := ""
+		err := survey.AskOne(&prompt, &person)
+		exitOnInterrupt(err)
+
+		person = strings.TrimSpace(person)
+		if len(person) > 0 {
+			fmt.Println()
+			people = append(people, person)
 			continue
 		}
 
@@ -199,6 +219,9 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		}
 		if len(locations) > 0 {
 			tagMap["location"] = locations
+		}
+		if len(people) > 0 {
+			tagMap["people"] = people
 		}
 	}
 
