@@ -1,10 +1,18 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"log"
+
+	"github.com/bgraf/rueckblick/data/geotrack"
+	"github.com/spf13/viper"
+)
 
 var (
 	KeyJournalDirectory = "journal.directory"
 	KeyBuildDirectory   = "build.directory"
+	KeyGeoHomeLat       = "geo.home.lat"
+	KeyGeoHomeLon       = "geo.home.lon"
+	KeyMapThreshold     = "geo.mapthreshold"
 )
 
 func HasJournalDirectory() bool {
@@ -45,4 +53,27 @@ func DefaultPreviewFilename() string {
 
 func DefaultPreviewJPEGQuality() int {
 	return 95
+}
+
+func HomeCoords() geotrack.GPXPoint {
+	if !viper.IsSet(KeyGeoHomeLat) || !viper.IsSet(KeyGeoHomeLon) {
+		log.Fatalf("config: either %s or %s not set", KeyGeoHomeLat, KeyGeoHomeLon)
+	}
+
+	return geotrack.GPXPoint{
+		Lat: viper.GetFloat64(KeyGeoHomeLat),
+		Lon: viper.GetFloat64(KeyGeoHomeLon),
+	}
+}
+
+func DefaultMapThreshold() float64 {
+	return 50
+}
+
+func MapThreshold() float64 {
+	if viper.IsSet(KeyMapThreshold) {
+		return viper.GetFloat64(KeyMapThreshold)
+	}
+
+	return DefaultMapThreshold()
 }

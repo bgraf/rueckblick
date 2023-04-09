@@ -8,6 +8,7 @@ require (
 	github.com/adrianmo/go-nmea v1.8.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/goodsign/monday v1.0.1
+	github.com/jftuga/geodist v1.0.0
 	github.com/lithammer/fuzzysearch v1.1.5
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0

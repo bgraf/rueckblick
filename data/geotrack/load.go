@@ -24,18 +24,27 @@ func (p GPXPoint) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]float64{p.Lat, p.Lon})
 }
 
-// LoadTrack loads a track file from the given file path and correlates the documents images with
-// the track's points.
-func LoadTrack(doc *document.Document, trackFilePath string) (points []GPXPoint, images []GPXLocatedImage, err error) {
+func LoadTrack(trackFilePath string) (points []GPXPoint, err error) {
 	ext := strings.ToLower(path.Ext(trackFilePath))
 	if ext == ".gpx" {
 		points, err = loadGPXTrack(trackFilePath)
 	} else if ext == ".txt" {
 		points, err = loadNMEATrack(trackFilePath)
 	} else {
-		return nil, nil, fmt.Errorf("unknown track extension '%s'", ext)
+		return nil, fmt.Errorf("unknown track extension '%s'", ext)
 	}
 
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+// LoadTrackWithImages loads a track file from the given file path and correlates the documents images with
+// the track's points.
+func LoadTrackWithImages(doc *document.Document, trackFilePath string) (points []GPXPoint, images []GPXLocatedImage, err error) {
+	points, err = LoadTrack(trackFilePath)
 	if err != nil {
 		return
 	}

@@ -8,9 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/bgraf/rueckblick/config"
@@ -47,7 +45,7 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("could not ensure build directory: %w", err)
 	}
 
-	templates, err := readTemplates()
+	templates, err := render.ReadTemplates()
 	if err != nil {
 		return err
 	}
@@ -164,7 +162,7 @@ func writeCalendarFile(store *data.Store, templates *template.Template, buildDir
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	fileName := calendarFileName(year, month)
+	fileName := render.CalendarFileName(year, month)
 
 	calendarFilePath := filepath.Join(buildDirectory, fileName)
 	err = os.WriteFile(calendarFilePath, buf.Bytes(), 0666)
@@ -232,7 +230,7 @@ func writeTagFiles(store *data.Store, templates *template.Template, buildDirecto
 			return fmt.Errorf("could not execute template: %w", err)
 		}
 
-		fileName := tagFileName(tag)
+		fileName := render.TagFileName(tag)
 
 		tagFilePath := filepath.Join(buildDirectory, fileName)
 		err = os.WriteFile(tagFilePath, buf.Bytes(), 0666)
@@ -258,7 +256,7 @@ func processEntryFiles(store *data.Store, templates *template.Template, buildDir
 				return 0, err
 			}
 
-			entryFile := filepath.Join(buildDirectory, entryFileName(doc))
+			entryFile := filepath.Join(buildDirectory, render.EntryFileName(doc))
 			resultModTime, err := filesystem.FileModifiedTime(entryFile)
 			if err != nil {
 				if errors.Is(err, os.ErrNotExist) {
@@ -303,7 +301,7 @@ func writeEntryFile(store *data.Store, doc *document.Document, templates *templa
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	entryFile := filepath.Join(buildDirectory, entryFileName(doc))
+	entryFile := filepath.Join(buildDirectory, render.EntryFileName(doc))
 
 	err = os.WriteFile(entryFile, buf.Bytes(), 0666)
 	if err != nil {
@@ -313,54 +311,4 @@ func writeEntryFile(store *data.Store, doc *document.Document, templates *templa
 	log.Printf("rendered entry '%s'", entryFile)
 
 	return nil
-}
-
-func calendarFileName(year, month int) string {
-	return fmt.Sprintf("cal-%04d-%02d.html", year, month)
-}
-
-func tagFileName(tag document.Tag) string {
-	title := normalizeFileName(tag.Normalize())
-	return fmt.Sprintf("tag-%s.html", title)
-}
-
-func entryFileName(doc *document.Document) string {
-	title := normalizeFileName(doc.Title)
-	return fmt.Sprintf("%s-%s.html", doc.Date.Format("2006-01-02"), title)
-}
-
-var fileNameNormalizationPattern = regexp.MustCompile("[^a-z0-9]")
-
-func normalizeFileName(s string) string {
-	s = strings.TrimSpace(strings.ToLower(s))
-	return fileNameNormalizationPattern.ReplaceAllString(s, "_")
-}
-
-func readTemplates() (*template.Template, error) {
-	funcMap := render.MakeTemplateFuncmap()
-
-	funcMap["previewURL"] = func(doc *document.Document) template.URL {
-		return template.URL(fmt.Sprintf("file://%s", doc.PreviewAbsolutePath()))
-	}
-
-	funcMap["entryURL"] = func(doc *document.Document) string {
-		return fmt.Sprintf("./%s", entryFileName(doc))
-	}
-
-	funcMap["tagURL"] = func(tag document.Tag) template.URL {
-		return template.URL(tagFileName(tag))
-	}
-
-	funcMap["calendarURL"] = func(t time.Time) template.URL {
-		y, m, _ := t.Date()
-		return template.URL(calendarFileName(y, int(m)))
-	}
-
-	// TODO: replace by relative string or embed
-	templates, err := template.New("").Funcs(funcMap).ParseFS(res.Templates, "templates/*")
-	if err != nil {
-		return nil, fmt.Errorf("failed to load templates: %w", err)
-	}
-
-	return templates, nil
 }

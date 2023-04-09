@@ -33,7 +33,7 @@ func EmplaceGPXMaps(doc *document.Document, toResource MapToResourceFunc) {
 			trackFile = path.Join(doc.DocumentDirectory(), trackFile)
 		}
 
-		points, images, err := geotrack.LoadTrack(doc, trackFile)
+		points, images, err := geotrack.LoadTrackWithImages(doc, trackFile)
 		if err != nil {
 			panic(err)
 		}
@@ -76,4 +76,27 @@ func EmplaceGPXMaps(doc *document.Document, toResource MapToResourceFunc) {
 
 		s.ReplaceWithHtml(buf.String())
 	})
+}
+
+// GeoMaps finds all track files embedded in the document.
+func GeoMaps(doc *document.Document) []document.GXPMap {
+	mapID := -1
+	var maps []document.GXPMap
+
+	doc.HTML.Find(GPXTagName).Each(func(i int, s *goquery.Selection) {
+		mapID++
+
+		trackFile := s.AttrOr(GPXTagTrackAtteName, config.DefaultGPXFile())
+		if !path.IsAbs(trackFile) {
+			trackFile = path.Join(doc.DocumentDirectory(), trackFile)
+		}
+
+		mapElementID := fmt.Sprintf("map-%d", mapID)
+		maps = append(doc.Maps, document.GXPMap{
+			GPXPath:   trackFile,
+			ElementID: mapElementID,
+		})
+	})
+
+	return maps
 }
