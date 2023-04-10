@@ -98,6 +98,14 @@ func (s *Store) Tags() []document.Tag {
 	return s.tags
 }
 
+func (s *Store) TagsByCategory() map[string][]document.Tag {
+	groups := make(map[string][]document.Tag)
+	for _, tag := range s.Tags() {
+		groups[tag.Category] = append(groups[tag.Category], tag)
+	}
+	return groups
+}
+
 func (s *Store) SortTags() {
 	sort.Slice(
 		s.tags,

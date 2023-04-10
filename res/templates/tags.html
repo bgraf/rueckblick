@@ -1,7 +1,10 @@
 {{template "header"}}
+{{ range . }}
+<h2>{{ .Category }}</h2>
 <div class="taglist">
-{{range .}}
+{{range .Tags }}
     <div class="taglist-tag">{{template "tag" .}}</div>
 {{end}}
 </div>
+{{ end }}
 {{template "footer"}}

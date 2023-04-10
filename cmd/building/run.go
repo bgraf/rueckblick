@@ -195,11 +195,32 @@ func writeIndexFile(store *data.Store, templates *template.Template, buildDirect
 }
 
 func writeTagsIndexFile(store *data.Store, templates *template.Template, buildDirectory string) error {
-	tags := store.Tags()
+	tagsByCategory := store.TagsByCategory()
 
-	sort.Slice(tags, func(i, j int) bool {
-		return tags[i].String() < tags[j].String()
-	})
+	tags := []struct {
+		Category string
+		Tags     []document.Tag
+	}{
+		{
+			Category: "Orte",
+			Tags:     tagsByCategory["location"],
+		},
+		{
+			Category: "Personen",
+			Tags:     tagsByCategory["people"],
+		},
+		{
+			Category: "Andere",
+			Tags:     tagsByCategory["general"],
+		},
+	}
+
+	for k := range tags {
+		ts := tags[k].Tags
+		sort.Slice(ts, func(i, j int) bool {
+			return ts[i].String() < ts[j].String()
+		})
+	}
 
 	var buf bytes.Buffer
 	err := templates.ExecuteTemplate(&buf, "tags.html", tags)
