@@ -417,6 +417,10 @@ a:hover {
     max-height: 12px;
 }
 
+.inactive-icon {
+    opacity: 0.25;
+}
+
 .gallery {
     /*
     display:flex;

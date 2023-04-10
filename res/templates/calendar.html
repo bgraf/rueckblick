@@ -5,11 +5,15 @@
     <a href ="{{ .PrevYear | calendarURL }}">
         <i class="icon-arrow-s-left"></i>
     </a>
+    {{ else }}
+        <i class="icon-arrow-s-left inactive-icon"></i>
     {{ end }}
     {{ if .HasPrevMonth }}
     <a href ="{{ .PrevMonth | calendarURL }}">
         <i class="icon-arrow-left"></i>
     </a>
+    {{ else }}
+        <i class="icon-arrow-left inactive-icon"></i>
     {{ end }}
     <span class="calendar-yearmonth">
         {{ .Month | yearMonthDisplay }}
@@ -18,11 +22,15 @@
     <a href ="{{ .NextMonth | calendarURL }}">
         <i class="icon-arrow-right"></i>
     </a>
+    {{ else }}
+        <i class="icon-arrow-right inactive-icon"></i>
     {{ end }}
     {{ if .HasNextYear }}
     <a href ="{{ .NextYear | calendarURL }}">
         <i class="icon-arrow-s-right"></i>
     </a>
+    {{ else }}
+        <i class="icon-arrow-s-right inactive-icon"></i>
     {{ end }}
 </div>
 
