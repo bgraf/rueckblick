@@ -29,6 +29,7 @@ func init() {
 	gatherCmd.Flags().StringP("destination", "d", "", "Destination root")
 	gatherCmd.Flags().StringP("from", "f", time.Now().Format("2006-01-02"), "Earliest date to copy")
 	gatherCmd.Flags().BoolP("all", "a", false, "Copy all and ignore from date")
+	gatherCmd.Flags().BoolP("no-recurse", "R", false, "Do not recurse on sub-directories")
 }
 
 func runGather(cmd *cobra.Command, args []string) error {
@@ -39,6 +40,11 @@ func runGather(cmd *cobra.Command, args []string) error {
 
 	if len(args) == 0 {
 		return fmt.Errorf("no sources given and no sources specified in configuration")
+	}
+
+	noRecurse, err := cmd.Flags().GetBool("no-recurse")
+	if err != nil {
+		return err
 	}
 
 	destRoot, err := cmd.Flags().GetString("destination")
@@ -75,47 +81,71 @@ func runGather(cmd *cobra.Command, args []string) error {
 		fromDate = time.Date(fromDate.Year(), fromDate.Month(), fromDate.Day(), 0, 0, 0, 0, time.Local)
 	}
 
+	processFile := func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !d.Type().IsRegular() {
+			return nil
+		}
+
+		path = filesystem.Abs(path)
+		info, err := d.Info()
+		if err != nil {
+			return fmt.Errorf("file info: %w", err)
+		}
+
+		mod := info.ModTime()
+		date := time.Date(mod.Year(), mod.Month(), mod.Day(), 0, 0, 0, 0, time.Local)
+
+		targetDir := destinationMap.Get(date)
+		targetFile := filepath.Join(targetDir, d.Name())
+
+		if date.Before(fromDate) {
+			log.Printf("skipping '%s', before from date", targetFile)
+			return nil
+		}
+
+		if filesystem.Exists(targetFile) {
+			log.Printf("skipping '%s', already exists", targetFile)
+			return nil
+		}
+
+		if err := filesystem.CreateDirectoryIfNotExists(targetDir); err != nil {
+			return err
+		}
+
+		log.Printf("copying to %s\n", targetFile)
+		return filesystem.Copy(path, targetFile)
+	}
+
+	processRoot := func(root string) error {
+		return filepath.WalkDir(root, processFile)
+	}
+
+	if noRecurse {
+		processRoot = func(root string) error {
+			entries, err := os.ReadDir(root)
+			if err != nil {
+				return err
+			}
+
+			for _, entry := range entries {
+				path := filepath.Join(root, entry.Name())
+				if err := processFile(path, entry, nil); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}
+	}
+
 	for _, root := range args {
 		log.Printf("scanning root %s\n", root)
-		err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
 
-			if !d.Type().IsRegular() {
-				return nil
-			}
-
-			path = filesystem.Abs(path)
-			info, err := d.Info()
-			if err != nil {
-				return fmt.Errorf("file info: %w", err)
-			}
-
-			mod := info.ModTime()
-			date := time.Date(mod.Year(), mod.Month(), mod.Day(), 0, 0, 0, 0, time.Local)
-
-			targetDir := destinationMap.Get(date)
-			targetFile := filepath.Join(targetDir, d.Name())
-
-			if date.Before(fromDate) {
-				log.Printf("skipping '%s', before from date", targetFile)
-				return nil
-			}
-
-			if filesystem.Exists(targetFile) {
-				log.Printf("skipping '%s', already exists", targetFile)
-				return nil
-			}
-
-			if err := filesystem.CreateDirectoryIfNotExists(targetDir); err != nil {
-				return err
-			}
-
-			log.Printf("copying to %s\n", targetFile)
-			return filesystem.Copy(path, targetFile)
-		})
-
+		err := processRoot(root)
 		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
