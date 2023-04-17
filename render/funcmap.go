@@ -9,14 +9,28 @@ import (
 	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/goodsign/monday"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 func MakeTemplateFuncmap() template.FuncMap {
 	tagSet := NewTagSet()
+	periodColors := make(map[string]colorful.Color)
 
 	return template.FuncMap{
 		"tagColor": func(tag document.Tag) string {
 			return tagSet.HexColor(tag.String())
+		},
+		"periodColor": func(name string) string {
+			name = document.NormalizeTagName(name)
+			if c, ok := periodColors[name]; ok {
+				return c.Hex()
+			}
+
+			h, _, _ := colorful.WarmColor().Hsv()
+			c := colorful.Hsv(h, 0.15, 1.0)
+			periodColors[name] = c
+
+			return c.Hex()
 		},
 		"tagDisplay": func(tag document.Tag) template.HTML {
 			if tag.Category == "location" {

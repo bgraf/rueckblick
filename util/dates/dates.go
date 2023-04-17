@@ -28,6 +28,10 @@ func FromYM(year, month int) time.Time {
 	return FromYMD(year, month, 1)
 }
 
+func ToLocal(t time.Time) time.Time {
+	return FromYMD(t.Year(), int(t.Month()), t.Day())
+}
+
 func PriorMonday(t time.Time) time.Time {
 	if t.Weekday() >= time.Monday {
 		return t.AddDate(0, 0, 1-int(t.Weekday()))

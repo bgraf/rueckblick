@@ -13,7 +13,8 @@
     </div>
 </div>
 {{ range $doc := .Documents }}
-<div class="index-entry">
+{{ $period := $.Ctx.GetPeriod $doc.Date }}
+<div class="index-entry"{{ if $period }} style="background-color:{{ periodColor $period.Name }};" title="{{ $period.Name }}"{{ end }}>
         <div class="index-entry-preview">
             {{ if $doc.HasPreview }}
                 <img src="{{ $doc | previewURL }}">
