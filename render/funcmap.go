@@ -19,15 +19,16 @@ func MakeTemplateFuncmap() template.FuncMap {
 			return tagSet.HexColor(tag.String())
 		},
 		"tagDisplay": func(tag document.Tag) template.HTML {
-			if tag.Category == "location" {
+			switch tag.Category {
+			case "location":
 				return template.HTML(fmt.Sprintf("<i class=\"icon-map-pin-line icon-small\"></i> %s", tag.String()))
-			}
-
-			if tag.Category == "people" {
+			case "people":
 				return template.HTML(fmt.Sprintf("<i class=\"icon-user icon-small\"></i> %s", tag.String()))
+			case "period":
+				return template.HTML(fmt.Sprintf("<i class=\"icon-period icon-small\"></i> %s", tag.String()))
+			default:
+				return template.HTML(tag.String())
 			}
-
-			return template.HTML(tag.String())
 		},
 		"isFirstOfWeek": func(t time.Time) bool {
 			return t.Weekday() == time.Monday

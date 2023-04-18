@@ -327,6 +327,14 @@ a:hover {
     display: inline-block;
 }
 
+.icon-period {
+    background-image: url(../icon/flight-takeoff-fill.svg);
+    background-size: contain;
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+}
+
 .icon-gallery-fill {
     background-image: url(../icon/gallery-fill.svg);
     background-size: cover;
