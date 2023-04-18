@@ -42,6 +42,7 @@ type Document struct {
 	HTML            *goquery.Document // HTML content
 	Title           string
 	Tags            []Tag
+	Periods         []Period
 	Date            time.Time
 	Abstract        string
 	Preview         string
@@ -69,6 +70,18 @@ func (doc *Document) HasGallery() bool {
 
 func (doc *Document) HasMap() bool {
 	return len(doc.Maps) > 0
+}
+
+func (doc *Document) HasPeriod() bool {
+	return len(doc.Periods) > 0
+}
+
+func (doc *Document) FirstPeriod() Period {
+	if !doc.HasPeriod() {
+		panic("no period")
+	}
+
+	return doc.Periods[0]
 }
 
 func (doc *Document) MapElementID(no int) string {

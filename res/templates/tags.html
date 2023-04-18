@@ -1,5 +1,5 @@
 {{template "header"}}
-{{ range . }}
+{{ range .Tags }}
 <h2>{{ .Category }}</h2>
 <div class="taglist">
 {{range .Tags }}
@@ -7,4 +7,15 @@
 {{end}}
 </div>
 {{ end }}
+
+<h2>Zeitabschnitte</h2>
+<table class="period-table">
+{{range .Periods }}
+    <tr>
+        <td><a href="{{ tagURL .Tag }}"><span style="background-color:{{ tagColor .Tag }};" class="tag">{{ .Name }}</span></a></td>
+        <td><a href="{{ .From | calendarURL }}">{{.From.Format "2006-01-02" }}</a></td>
+        <td><a href="{{ .To | calendarURL }}">{{.To.Format "2006-01-02" }}</a></td>
+    </tr>
+{{end}}
+</table>
 {{template "footer"}}

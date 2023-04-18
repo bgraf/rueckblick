@@ -61,7 +61,22 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	if numUpdated > 0 {
-		if err := writeIndexFile(store, templates, buildDirectory); err != nil {
+		periodByDate := make(map[time.Time]document.Period)
+		for _, period := range store.Periods {
+			dates.ForEachDay(period.From, period.To, func(t time.Time) {
+				periodByDate[dates.ToLocal(t)] = period
+			})
+		}
+
+		getPeriod := func(t time.Time) *document.Period {
+			if p, ok := periodByDate[t]; ok {
+				return &p
+			}
+
+			return nil
+		}
+
+		if err := writeIndexFile(store, templates, buildDirectory, getPeriod); err != nil {
 			return err
 		}
 
@@ -73,7 +88,7 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		if err := writeCalendarFiles(store, templates, buildDirectory); err != nil {
+		if err := writeCalendarFiles(store, templates, buildDirectory, getPeriod); err != nil {
 			return err
 		}
 
@@ -91,7 +106,12 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 
 type isValidDate = func(t time.Time) bool
 
-func writeCalendarFiles(store *data.Store, templates *template.Template, buildDirectory string) error {
+func writeCalendarFiles(
+	store *data.Store,
+	templates *template.Template,
+	buildDirectory string,
+	getPeriod func(t time.Time) *document.Period,
+) error {
 	end := dates.FirstDayOfMonth(store.Documents[0].Date).AddDate(0, 0, 1)
 	first := dates.FirstDayOfMonth(store.Documents[len(store.Documents)-1].Date)
 
@@ -102,7 +122,16 @@ func writeCalendarFiles(store *data.Store, templates *template.Template, buildDi
 	}(first, end)
 
 	for first.Before(end) {
-		if err := writeCalendarFile(store, templates, buildDirectory, first.Year(), int(first.Month()), isValid); err != nil {
+		err := writeCalendarFile(
+			store,
+			templates,
+			buildDirectory,
+			first.Year(),
+			int(first.Month()),
+			isValid,
+			getPeriod,
+		)
+		if err != nil {
 			return err
 		}
 
@@ -112,10 +141,18 @@ func writeCalendarFiles(store *data.Store, templates *template.Template, buildDi
 	return nil
 }
 
-func writeCalendarFile(store *data.Store, templates *template.Template, buildDirectory string, year, month int, isValidDate isValidDate) error {
+func writeCalendarFile(
+	store *data.Store,
+	templates *template.Template,
+	buildDirectory string,
+	year, month int,
+	isValidDate isValidDate,
+	getPeriod func(t time.Time) *document.Period,
+) error {
 	type calendarDay struct {
 		Date     time.Time
 		Document *document.Document
+		Period   *document.Period
 	}
 
 	var calendarDays []calendarDay
@@ -135,6 +172,7 @@ func writeCalendarFile(store *data.Store, templates *template.Template, buildDir
 		calendarDays = append(calendarDays, calendarDay{
 			Document: doc,
 			Date:     curr,
+			Period:   getPeriod(curr),
 		})
 	})
 
@@ -175,7 +213,12 @@ func writeCalendarFile(store *data.Store, templates *template.Template, buildDir
 	return nil
 }
 
-func writeIndexFile(store *data.Store, templates *template.Template, buildDirectory string) error {
+func writeIndexFile(
+	store *data.Store,
+	templates *template.Template,
+	buildDirectory string,
+	getPeriod func(t time.Time) *document.Period,
+) error {
 	groups := render.MakeDocumentGroups(store.Documents)
 	var buf bytes.Buffer
 	err := templates.ExecuteTemplate(&buf, "index.html", map[string]interface{}{
@@ -195,8 +238,8 @@ func writeIndexFile(store *data.Store, templates *template.Template, buildDirect
 }
 
 func writeTagsIndexFile(store *data.Store, templates *template.Template, buildDirectory string) error {
+	// Prepare tags
 	tagsByCategory := store.TagsByCategory()
-
 	tags := []struct {
 		Category string
 		Tags     []document.Tag
@@ -222,8 +265,17 @@ func writeTagsIndexFile(store *data.Store, templates *template.Template, buildDi
 		})
 	}
 
+	// Prepare periods
+	periods := store.Periods
+	sort.Slice(periods, func(i, j int) bool {
+		return periods[i].From.After(periods[j].From)
+	})
+
 	var buf bytes.Buffer
-	err := templates.ExecuteTemplate(&buf, "tags.html", tags)
+	err := templates.ExecuteTemplate(&buf, "tags.html", map[string]any{
+		"Tags":    tags,
+		"Periods": periods,
+	})
 	if err != nil {
 		return fmt.Errorf("could not execute template: %w", err)
 	}

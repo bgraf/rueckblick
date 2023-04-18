@@ -13,6 +13,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/yuin/goldmark"
@@ -27,6 +28,7 @@ type StoreOptions struct {
 type Store struct {
 	RootDirectory       string
 	Documents           []*document.Document
+	Periods             []document.Period
 	tagByNormalizedName map[string]document.Tag
 	tags                []document.Tag
 	options             *StoreOptions
@@ -40,9 +42,17 @@ func NewStore(rootDirectory string, options *StoreOptions) (*Store, error) {
 	}
 
 	var err error
+	periodsPath := filepath.Join(rootDirectory, "periods.yaml")
+	if filesystem.Exists(periodsPath) {
+		store.Periods, err = LoadPeriods(filepath.Join(rootDirectory, "periods.yaml"))
+		if err != nil {
+			return nil, fmt.Errorf("load periods: %w", err)
+		}
+	}
+
 	store.Documents, err = store.loadDocuments(rootDirectory)
 	if err != nil {
-		return nil, fmt.Errorf("load documents failed: %w", err)
+		return nil, fmt.Errorf("load documents: %w", err)
 	}
 
 	for _, doc := range store.Documents {
@@ -143,6 +153,16 @@ func (s *Store) loadDocuments(rootDirectory string) ([]*document.Document, error
 		doc, err := s.loadDocument(path)
 		if err != nil {
 			return err
+		}
+
+		// Add additional tags
+		for _, period := range s.Periods {
+			if !(period.From.After(doc.Date) || period.To.Before(doc.Date)) {
+				doc.Tags = append(doc.Tags, period.Tag)
+				doc.Periods = append(doc.Periods, period)
+
+				break
+			}
 		}
 
 		docs = append(docs, doc)
