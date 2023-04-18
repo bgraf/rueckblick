@@ -13,8 +13,7 @@
     </div>
 </div>
 {{ range $doc := .Documents }}
-{{ $period := $.Ctx.GetPeriod $doc.Date }}
-<div class="index-entry{{ if $period }} in-period{{ end }}"{{ if $period }} title="{{ $period.Name }}"{{ end }}>
+<div class="index-entry{{ if $doc.HasPeriod }} in-period{{ end }}"{{ if $doc.HasPeriod }} title="{{ $doc.FirstPeriod.Name }}"{{ end }}>
         <div class="index-entry-preview">
             {{ if $doc.HasPreview }}
                 <img src="{{ $doc | previewURL }}">

@@ -28,7 +28,7 @@ type StoreOptions struct {
 type Store struct {
 	RootDirectory       string
 	Documents           []*document.Document
-	Periods             []Period
+	Periods             []document.Period
 	tagByNormalizedName map[string]document.Tag
 	tags                []document.Tag
 	options             *StoreOptions
@@ -159,6 +159,7 @@ func (s *Store) loadDocuments(rootDirectory string) ([]*document.Document, error
 		for _, period := range s.Periods {
 			if !(period.From.After(doc.Date) || period.To.Before(doc.Date)) {
 				doc.Tags = append(doc.Tags, period.Tag)
+				doc.Periods = append(doc.Periods, period)
 
 				break
 			}

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/bgraf/rueckblick/data/document"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 )
 
 type periodDescriptor struct {
@@ -13,14 +13,7 @@ type periodDescriptor struct {
 	To   string
 }
 
-type Period struct {
-	Name string
-	Tag  document.Tag
-	From time.Time
-	To   time.Time
-}
-
-func LoadPeriods(path string) (periods []Period, err error) {
+func LoadPeriods(path string) (periods []document.Period, err error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return
@@ -42,7 +35,7 @@ func LoadPeriods(path string) (periods []Period, err error) {
 			return nil, err
 		}
 
-		periods = append(periods, Period{
+		periods = append(periods, document.Period{
 			Name: k,
 			From: from,
 			To:   to,

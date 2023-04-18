@@ -61,14 +61,14 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	if numUpdated > 0 {
-		periodByDate := make(map[time.Time]data.Period)
+		periodByDate := make(map[time.Time]document.Period)
 		for _, period := range store.Periods {
 			dates.ForEachDay(period.From, period.To, func(t time.Time) {
 				periodByDate[dates.ToLocal(t)] = period
 			})
 		}
 
-		getPeriod := func(t time.Time) *data.Period {
+		getPeriod := func(t time.Time) *document.Period {
 			if p, ok := periodByDate[t]; ok {
 				return &p
 			}
@@ -110,7 +110,7 @@ func writeCalendarFiles(
 	store *data.Store,
 	templates *template.Template,
 	buildDirectory string,
-	getPeriod func(t time.Time) *data.Period,
+	getPeriod func(t time.Time) *document.Period,
 ) error {
 	end := dates.FirstDayOfMonth(store.Documents[0].Date).AddDate(0, 0, 1)
 	first := dates.FirstDayOfMonth(store.Documents[len(store.Documents)-1].Date)
@@ -147,12 +147,12 @@ func writeCalendarFile(
 	buildDirectory string,
 	year, month int,
 	isValidDate isValidDate,
-	getPeriod func(t time.Time) *data.Period,
+	getPeriod func(t time.Time) *document.Period,
 ) error {
 	type calendarDay struct {
 		Date     time.Time
 		Document *document.Document
-		Period   *data.Period
+		Period   *document.Period
 	}
 
 	var calendarDays []calendarDay
@@ -213,25 +213,16 @@ func writeCalendarFile(
 	return nil
 }
 
-type indexContext struct {
-	getPeriod func(time.Time) *data.Period
-}
-
-func (i indexContext) GetPeriod(t time.Time) *data.Period {
-	return i.getPeriod(dates.ToLocal(t))
-}
-
 func writeIndexFile(
 	store *data.Store,
 	templates *template.Template,
 	buildDirectory string,
-	getPeriod func(t time.Time) *data.Period,
+	getPeriod func(t time.Time) *document.Period,
 ) error {
 	groups := render.MakeDocumentGroups(store.Documents)
 	var buf bytes.Buffer
 	err := templates.ExecuteTemplate(&buf, "index.html", map[string]interface{}{
 		"Groups": groups,
-		"Ctx":    indexContext{getPeriod: getPeriod},
 	})
 	if err != nil {
 		return fmt.Errorf("could not execute template: %w", err)
