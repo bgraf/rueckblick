@@ -12,8 +12,9 @@
 <table class="period-table">
 {{range .Periods }}
     <tr>
-        <td><a href="{{ periodURL .Name }}"><span class="tag" style="background-color:{{ periodColor .Name }}">{{ .Name }}</span></a></td>
-        <td>{{.From.Format "2006-01-02" }} &ndash; {{.To.Format "2006-01-02" }}</td>
+        <td><a href="{{ tagURL .Tag }}"><span style="background-color:{{ tagColor .Tag }};" class="tag">{{ .Name }}</span></a></td>
+        <td><a href="{{ .From | calendarURL }}">{{.From.Format "2006-01-02" }}</a></td>
+        <td><a href="{{ .To | calendarURL }}">{{.To.Format "2006-01-02" }}</a></td>
     </tr>
 {{end}}
 </table>

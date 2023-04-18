@@ -50,7 +50,7 @@
             {{ .Date | ISOWeek }}
         </div>
         {{end}}
-        <div class="calendar-day{{ if not (equalMonth .Date $context.Month) }} calendar-day-other-month{{ end }}" style="{{ if .Period }}background-color:{{ periodColor .Period.Name }};{{end}}" {{ if.Period }}title="{{ .Period.Name }}"{{ end }}>
+        <div class="calendar-day{{ if not (equalMonth .Date $context.Month) }} calendar-day-other-month{{ end }}{{ if .Period }} in-period{{ end }}" {{ if.Period }}title="{{ .Period.Name }}"{{ end }}>
             <div class="calendar-day-no">{{ .Date.Format "2" }}</div>
             <br>
 

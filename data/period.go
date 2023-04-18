@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/bgraf/rueckblick/data/document"
 	"gopkg.in/yaml.v3"
 )
 
@@ -14,6 +15,7 @@ type periodDescriptor struct {
 
 type Period struct {
 	Name string
+	Tag  document.Tag
 	From time.Time
 	To   time.Time
 }
@@ -44,6 +46,7 @@ func LoadPeriods(path string) (periods []Period, err error) {
 			Name: k,
 			From: from,
 			To:   to,
+			Tag:  document.Tag{Raw: k, Category: "period"},
 		})
 	}
 

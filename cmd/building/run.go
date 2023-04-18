@@ -277,7 +277,7 @@ func writeTagsIndexFile(store *data.Store, templates *template.Template, buildDi
 	// Prepare periods
 	periods := store.Periods
 	sort.Slice(periods, func(i, j int) bool {
-		return periods[i].From.Before(periods[j].From)
+		return periods[i].From.After(periods[j].From)
 	})
 
 	var buf bytes.Buffer

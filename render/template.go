@@ -53,10 +53,6 @@ func ReadTemplates() (*template.Template, error) {
 		return template.URL(TagFileName(tag))
 	}
 
-	funcMap["periodURL"] = func(period string) template.URL {
-		return template.URL(TagFileName(document.Tag{Raw: period}))
-	}
-
 	funcMap["calendarURL"] = func(t time.Time) template.URL {
 		y, m, _ := t.Date()
 		return template.URL(CalendarFileName(y, int(m)))
