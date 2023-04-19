@@ -1,7 +1,7 @@
 {{template "header"}}
 <div class="entry-title-bar">
     <div class="entry-date">
-        {{ .Document.Date.Format "2006-01-02" }}
+        <a href="{{ .Document.Date | calendarURL }}">{{ .Document.Date.Format "2006-01-02" }}</a>
     </div>
     <div>
         <h1>{{ .Document.Title }}</h1>
