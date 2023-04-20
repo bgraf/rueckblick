@@ -1,7 +1,23 @@
 {{template "header"}}
 <div class="entry-title-bar">
+    <div style="display: flex; justify-content: space-between;">
+    {{ if .DocumentPred }}
+    <a href ="{{ .DocumentPred | entryURL }}" title="{{ .DocumentPred.Title }}">
+        <i class="icon-arrow-s-left"></i>
+    </a>
+    {{ else }}
+        <i class="icon-arrow-s-left inactive-icon"></i>
+    {{ end }}
     <div class="entry-date">
         <a href="{{ .Document.Date | calendarURL }}">{{ .Document.Date.Format "2006-01-02" }}</a>
+    </div>
+    {{ if .DocumentSucc }}
+    <a href ="{{ .DocumentSucc | entryURL }}" title="{{ .DocumentSucc.Title }}">
+        <i class="icon-arrow-s-right"></i>
+    </a>
+    {{ else }}
+        <i class="icon-arrow-s-right inactive-icon"></i>
+    {{ end }}
     </div>
     <div>
         <h1>{{ .Document.Title }}</h1>

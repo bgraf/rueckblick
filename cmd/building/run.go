@@ -55,7 +55,15 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	numUpdated, err := processEntryFiles(store, templates, buildDirectory, isCleanBuild)
+	state := &buildState{
+		journalDirectory: journalDirectory,
+		buildDirectory:   buildDirectory,
+		templates:        templates,
+		isCleanBuild:     isCleanBuild,
+		store:            store,
+	}
+
+	numUpdated, err := processEntryFiles(state)
 	if err != nil {
 		return err
 	}
@@ -76,19 +84,19 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 
-		if err := writeIndexFile(store, templates, buildDirectory, getPeriod); err != nil {
+		if err := writeIndexFile(state, getPeriod); err != nil {
 			return err
 		}
 
-		if err := writeTagFiles(store, templates, buildDirectory); err != nil {
+		if err := writeTagFiles(state); err != nil {
 			return err
 		}
 
-		if err := writeTagsIndexFile(store, templates, buildDirectory); err != nil {
+		if err := writeTagsIndexFile(state); err != nil {
 			return err
 		}
 
-		if err := writeCalendarFiles(store, templates, buildDirectory, getPeriod); err != nil {
+		if err := writeCalendarFiles(state, getPeriod); err != nil {
 			return err
 		}
 
@@ -104,14 +112,22 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+type buildState struct {
+	journalDirectory string
+	buildDirectory   string
+	templates        *template.Template
+	isCleanBuild     bool
+	store            *data.Store
+}
+
 type isValidDate = func(t time.Time) bool
 
 func writeCalendarFiles(
-	store *data.Store,
-	templates *template.Template,
-	buildDirectory string,
+	state *buildState,
 	getPeriod func(t time.Time) *document.Period,
 ) error {
+	store := state.store
+
 	end := dates.FirstDayOfMonth(store.Documents[0].Date).AddDate(0, 0, 1)
 	first := dates.FirstDayOfMonth(store.Documents[len(store.Documents)-1].Date)
 
@@ -123,9 +139,7 @@ func writeCalendarFiles(
 
 	for first.Before(end) {
 		err := writeCalendarFile(
-			store,
-			templates,
-			buildDirectory,
+			state,
 			first.Year(),
 			int(first.Month()),
 			isValid,
@@ -142,9 +156,7 @@ func writeCalendarFiles(
 }
 
 func writeCalendarFile(
-	store *data.Store,
-	templates *template.Template,
-	buildDirectory string,
+	state *buildState,
 	year, month int,
 	isValidDate isValidDate,
 	getPeriod func(t time.Time) *document.Period,
@@ -165,7 +177,7 @@ func writeCalendarFile(
 	dates.ForEachDay(startDate, endDate, func(curr time.Time) {
 		var doc *document.Document
 
-		if docs := store.DocumentsOnDate(curr); len(docs) > 0 {
+		if docs := state.store.DocumentsOnDate(curr); len(docs) > 0 {
 			doc = docs[0]
 		}
 
@@ -184,7 +196,7 @@ func writeCalendarFile(
 	nextYear := dates.AddYears(currMonth, 1)
 
 	var buf bytes.Buffer
-	err := templates.ExecuteTemplate(&buf, "calendar.html", map[string]interface{}{
+	err := state.templates.ExecuteTemplate(&buf, "calendar.html", map[string]interface{}{
 		"Month":        currMonth,
 		"PrevMonth":    prevMonth,
 		"NextMonth":    nextMonth,
@@ -202,7 +214,7 @@ func writeCalendarFile(
 
 	fileName := render.CalendarFileName(year, month)
 
-	calendarFilePath := filepath.Join(buildDirectory, fileName)
+	calendarFilePath := filepath.Join(state.buildDirectory, fileName)
 	err = os.WriteFile(calendarFilePath, buf.Bytes(), 0666)
 	if err != nil {
 		return fmt.Errorf("could not write calendar file: %w", err)
@@ -214,21 +226,19 @@ func writeCalendarFile(
 }
 
 func writeIndexFile(
-	store *data.Store,
-	templates *template.Template,
-	buildDirectory string,
+	state *buildState,
 	getPeriod func(t time.Time) *document.Period,
 ) error {
-	groups := render.MakeDocumentGroups(store.Documents)
+	groups := render.MakeDocumentGroups(state.store.Documents)
 	var buf bytes.Buffer
-	err := templates.ExecuteTemplate(&buf, "index.html", map[string]interface{}{
+	err := state.templates.ExecuteTemplate(&buf, "index.html", map[string]interface{}{
 		"Groups": groups,
 	})
 	if err != nil {
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	indexFile := filepath.Join(buildDirectory, "index.html")
+	indexFile := filepath.Join(state.buildDirectory, "index.html")
 	err = os.WriteFile(indexFile, buf.Bytes(), 0666)
 	if err != nil {
 		return fmt.Errorf("could not write index file: %w", err)
@@ -237,9 +247,9 @@ func writeIndexFile(
 	return nil
 }
 
-func writeTagsIndexFile(store *data.Store, templates *template.Template, buildDirectory string) error {
+func writeTagsIndexFile(state *buildState) error {
 	// Prepare tags
-	tagsByCategory := store.TagsByCategory()
+	tagsByCategory := state.store.TagsByCategory()
 	tags := []struct {
 		Category string
 		Tags     []document.Tag
@@ -266,13 +276,13 @@ func writeTagsIndexFile(store *data.Store, templates *template.Template, buildDi
 	}
 
 	// Prepare periods
-	periods := store.Periods
+	periods := state.store.Periods
 	sort.Slice(periods, func(i, j int) bool {
 		return periods[i].From.After(periods[j].From)
 	})
 
 	var buf bytes.Buffer
-	err := templates.ExecuteTemplate(&buf, "tags.html", map[string]any{
+	err := state.templates.ExecuteTemplate(&buf, "tags.html", map[string]any{
 		"Tags":    tags,
 		"Periods": periods,
 	})
@@ -280,7 +290,7 @@ func writeTagsIndexFile(store *data.Store, templates *template.Template, buildDi
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	tagFilePath := filepath.Join(buildDirectory, "tags.html")
+	tagFilePath := filepath.Join(state.buildDirectory, "tags.html")
 	err = os.WriteFile(tagFilePath, buf.Bytes(), 0666)
 	if err != nil {
 		return fmt.Errorf("could not write tag file: %w", err)
@@ -289,13 +299,15 @@ func writeTagsIndexFile(store *data.Store, templates *template.Template, buildDi
 	return nil
 }
 
-func writeTagFiles(store *data.Store, templates *template.Template, buildDirectory string) error {
+func writeTagFiles(state *buildState) error {
+	store := state.store
+
 	for _, tag := range store.Tags() {
 		documents := store.DocumentsByTagName(tag.Raw)
 		groups := render.MakeDocumentGroups(documents)
 
 		var buf bytes.Buffer
-		err := templates.ExecuteTemplate(&buf, "index.html", map[string]interface{}{
+		err := state.templates.ExecuteTemplate(&buf, "index.html", map[string]interface{}{
 			"Groups": groups,
 			"Tag":    tag.Raw,
 		})
@@ -305,7 +317,7 @@ func writeTagFiles(store *data.Store, templates *template.Template, buildDirecto
 
 		fileName := render.TagFileName(tag)
 
-		tagFilePath := filepath.Join(buildDirectory, fileName)
+		tagFilePath := filepath.Join(state.buildDirectory, fileName)
 		err = os.WriteFile(tagFilePath, buf.Bytes(), 0666)
 		if err != nil {
 			return fmt.Errorf("could not write tag file: %w", err)
@@ -317,19 +329,19 @@ func writeTagFiles(store *data.Store, templates *template.Template, buildDirecto
 	return nil
 }
 
-func processEntryFiles(store *data.Store, templates *template.Template, buildDirectory string, isCleanBuild bool) (int, error) {
+func processEntryFiles(state *buildState) (int, error) {
 	numUpdated := 0
 
-	for _, doc := range store.Documents {
+	for i, doc := range state.store.Documents {
 		performUpdate := true
 
-		if !isCleanBuild {
+		if !state.isCleanBuild {
 			documentModTime, err := filesystem.FullSubtreeModifiedDate(doc.DocumentDirectory())
 			if err != nil {
 				return 0, err
 			}
 
-			entryFile := filepath.Join(buildDirectory, render.EntryFileName(doc))
+			entryFile := filepath.Join(state.buildDirectory, render.EntryFileName(doc))
 			resultModTime, err := filesystem.FileModifiedTime(entryFile)
 			if err != nil {
 				if errors.Is(err, os.ErrNotExist) {
@@ -346,7 +358,17 @@ func processEntryFiles(store *data.Store, templates *template.Template, buildDir
 			continue
 		}
 
-		if err := writeEntryFile(store, doc, templates, buildDirectory); err != nil {
+		var docSucc *document.Document
+		if i > 0 {
+			docSucc = state.store.Documents[i-1]
+		}
+
+		var docPred *document.Document
+		if i+1 < len(state.store.Documents) {
+			docPred = state.store.Documents[i+1]
+		}
+
+		if err := writeEntryFile(state, doc, docPred, docSucc); err != nil {
 			return 0, err
 		}
 
@@ -356,9 +378,14 @@ func processEntryFiles(store *data.Store, templates *template.Template, buildDir
 	return numUpdated, nil
 }
 
-func writeEntryFile(store *data.Store, doc *document.Document, templates *template.Template, buildDirectory string) error {
+func writeEntryFile(
+	state *buildState,
+	doc *document.Document,
+	docPred *document.Document,
+	docSucc *document.Document,
+) error {
 	// Extract body fragment
-	fragment, err := store.GetHtmlFragment(doc)
+	fragment, err := state.store.GetHtmlFragment(doc)
 	if err != nil {
 		// TODO: log
 		return fmt.Errorf("failed to build document: %w", err)
@@ -366,15 +393,17 @@ func writeEntryFile(store *data.Store, doc *document.Document, templates *templa
 
 	var buf bytes.Buffer
 
-	err = templates.ExecuteTemplate(&buf, "entry.html", map[string]interface{}{
-		"Document": doc,
-		"Fragment": template.HTML(fragment),
+	err = state.templates.ExecuteTemplate(&buf, "entry.html", map[string]interface{}{
+		"Document":     doc,
+		"DocumentPred": docPred,
+		"DocumentSucc": docSucc,
+		"Fragment":     template.HTML(fragment),
 	})
 	if err != nil {
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	entryFile := filepath.Join(buildDirectory, render.EntryFileName(doc))
+	entryFile := filepath.Join(state.buildDirectory, render.EntryFileName(doc))
 
 	err = os.WriteFile(entryFile, buf.Bytes(), 0666)
 	if err != nil {
