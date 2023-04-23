@@ -8,67 +8,82 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 
-	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/data"
 	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/res"
 	"github.com/bgraf/rueckblick/util/dates"
-	"github.com/spf13/cobra"
 )
 
-func RunBuildCmd(cmd *cobra.Command, args []string) error {
-	if !config.HasJournalDirectory() {
-		return fmt.Errorf("no journal directory configured")
-	}
+var fileNameNormalizationPattern = regexp.MustCompile("[^a-z0-9]")
 
-	if !config.HasBuildDirectory() {
-		return fmt.Errorf("no build directory configured")
-	}
+func normalizeFileName(s string) string {
+	s = strings.TrimSpace(strings.ToLower(s))
+	return fileNameNormalizationPattern.ReplaceAllString(s, "_")
+}
 
-	isCleanBuild, err := cmd.Flags().GetBool("clean")
-	if err != nil {
-		return err
-	}
+type Filenamer struct {
+}
 
-	journalDirectory := filesystem.Abs(config.JournalDirectory())
-	buildDirectory := filesystem.Abs(config.BuildDirectory())
+func (f Filenamer) EntryFile(doc *document.Document) string {
+	title := normalizeFileName(doc.Title)
+	return fmt.Sprintf("%s-%s.html", doc.Date.Format("2006-01-02"), title)
+}
+func (f Filenamer) CalendarFile(year, month int) string {
+	return fmt.Sprintf("cal-%04d-%02d.html", year, month)
+}
+func (f Filenamer) TagFile(tag document.Tag) string {
+	title := normalizeFileName(tag.Normalize())
+	return fmt.Sprintf("tag-%s.html", title)
+}
 
-	log.Printf("journal directory: %s", journalDirectory)
-	log.Printf("build directory:   %s", buildDirectory)
+type Options struct {
+	Clean            bool
+	JournalDirectory string
+	BuildDirectory   string
+}
 
-	if err := filesystem.CreateDirectoryIfNotExists(buildDirectory); err != nil {
+func Build(opts Options) error {
+	if err := filesystem.CreateDirectoryIfNotExists(opts.BuildDirectory); err != nil {
 		return fmt.Errorf("could not ensure build directory: %w", err)
 	}
 
-	templates, err := render.ReadTemplates()
+	templates, err := render.ReadTemplates(Filenamer{})
 	if err != nil {
 		return err
 	}
 
-	store, err := data.NewDefaultStore(journalDirectory)
+	store, err := data.NewDefaultStore(opts.JournalDirectory)
 	if err != nil {
 		return err
 	}
 
 	state := &buildState{
-		journalDirectory: journalDirectory,
-		buildDirectory:   buildDirectory,
-		templates:        templates,
-		isCleanBuild:     isCleanBuild,
-		store:            store,
+		Options:   opts,
+		templates: templates,
+		store:     store,
+		filenamer: Filenamer{},
 	}
+	state.Initialize()
 
-	numUpdated, err := processEntryFiles(state)
+	changedDocuments, err := collectPrimaryChangeDocuments(state)
 	if err != nil {
 		return err
 	}
 
-	if numUpdated > 0 {
+	// TODO: calculate transitively changed documents
+
+	if err := processEntryFiles(state, changedDocuments); err != nil {
+		return err
+	}
+
+	if changedDocuments.Len() > 0 {
 		periodByDate := make(map[time.Time]document.Period)
 		for _, period := range store.Periods {
 			dates.ForEachDay(period.From, period.To, func(t time.Time) {
@@ -101,23 +116,89 @@ func RunBuildCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		// TODO: replace constant "res" by some globally configurable value
-		if err := filesystem.InstallEmbedFS(res.Static, filepath.Join(buildDirectory, "res")); err != nil {
+		if err := filesystem.InstallEmbedFS(res.Static, filepath.Join(state.BuildDirectory, "res")); err != nil {
 			return fmt.Errorf("installation of state files failed: %w", err)
 		}
 	}
 
+	if err := writeBuildCache(state); err != nil {
+		log.Fatalf("write build cache: %s", err)
+	}
+
 	log.Println("done")
-	os.Exit(0)
 
 	return nil
 }
 
 type buildState struct {
-	journalDirectory string
-	buildDirectory   string
-	templates        *template.Template
-	isCleanBuild     bool
-	store            *data.Store
+	Options
+	templates   *template.Template
+	store       *data.Store
+	indexbyPath map[string]int
+	filenamer   Filenamer
+}
+
+func (state *buildState) Initialize() {
+	indexbyPath := make(map[string]int)
+	for i, d := range state.store.Documents {
+		indexbyPath[d.Path] = i
+	}
+
+	state.indexbyPath = indexbyPath
+}
+
+func (state *buildState) Index(d *document.Document) int {
+	if idx, ok := state.indexbyPath[d.Path]; ok {
+		return idx
+	}
+
+	panic("no index")
+}
+
+// WriteFile writes a file at the given path interpreted relative to the build directory.
+func (state *buildState) WriteFile(path string, content []byte) error {
+	if filepath.IsAbs(path) {
+		return fmt.Errorf("absolute path")
+	}
+
+	p := filepath.Join(state.BuildDirectory, path)
+
+	return os.WriteFile(p, content, 0o666)
+}
+
+func collectPrimaryChangeDocuments(state *buildState) (*DocumentSet, error) {
+	s := NewDocumentSet()
+
+	for _, doc := range state.store.Documents {
+		performUpdate := true
+
+		if !state.Clean {
+			documentModTime, err := filesystem.FullSubtreeModifiedDate(doc.DocumentDirectory())
+			if err != nil {
+				return nil, err
+			}
+
+			entryFile := filepath.Join(state.BuildDirectory, state.filenamer.EntryFile(doc))
+			resultModTime, err := filesystem.FileModifiedTime(entryFile)
+			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					performUpdate = true
+				} else {
+					return nil, err
+				}
+			} else {
+				performUpdate = resultModTime.Before(documentModTime)
+			}
+		}
+
+		if !performUpdate {
+			continue
+		}
+
+		s.Add(doc)
+	}
+
+	return s, nil
 }
 
 type isValidDate = func(t time.Time) bool
@@ -212,15 +293,14 @@ func writeCalendarFile(
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	fileName := render.CalendarFileName(year, month)
+	fileName := state.filenamer.CalendarFile(year, month)
 
-	calendarFilePath := filepath.Join(state.buildDirectory, fileName)
-	err = os.WriteFile(calendarFilePath, buf.Bytes(), 0666)
+	err = state.WriteFile(fileName, buf.Bytes())
 	if err != nil {
 		return fmt.Errorf("could not write calendar file: %w", err)
 	}
 
-	log.Printf("written calendar file '%s'", calendarFilePath)
+	log.Printf("written calendar file '%s'", fileName)
 
 	return nil
 }
@@ -238,8 +318,7 @@ func writeIndexFile(
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	indexFile := filepath.Join(state.buildDirectory, "index.html")
-	err = os.WriteFile(indexFile, buf.Bytes(), 0666)
+	err = state.WriteFile("index.html", buf.Bytes())
 	if err != nil {
 		return fmt.Errorf("could not write index file: %w", err)
 	}
@@ -290,8 +369,7 @@ func writeTagsIndexFile(state *buildState) error {
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	tagFilePath := filepath.Join(state.buildDirectory, "tags.html")
-	err = os.WriteFile(tagFilePath, buf.Bytes(), 0666)
+	err = state.WriteFile("tags.html", buf.Bytes())
 	if err != nil {
 		return fmt.Errorf("could not write tag file: %w", err)
 	}
@@ -315,48 +393,22 @@ func writeTagFiles(state *buildState) error {
 			return fmt.Errorf("could not execute template: %w", err)
 		}
 
-		fileName := render.TagFileName(tag)
+		fileName := state.filenamer.TagFile(tag)
 
-		tagFilePath := filepath.Join(state.buildDirectory, fileName)
-		err = os.WriteFile(tagFilePath, buf.Bytes(), 0666)
+		err = state.WriteFile(fileName, buf.Bytes())
 		if err != nil {
 			return fmt.Errorf("could not write tag file: %w", err)
 		}
 
-		log.Printf("written tag file '%s'", tagFilePath)
+		log.Printf("written tag file '%s'", fileName)
 	}
 
 	return nil
 }
 
-func processEntryFiles(state *buildState) (int, error) {
-	numUpdated := 0
-
-	for i, doc := range state.store.Documents {
-		performUpdate := true
-
-		if !state.isCleanBuild {
-			documentModTime, err := filesystem.FullSubtreeModifiedDate(doc.DocumentDirectory())
-			if err != nil {
-				return 0, err
-			}
-
-			entryFile := filepath.Join(state.buildDirectory, render.EntryFileName(doc))
-			resultModTime, err := filesystem.FileModifiedTime(entryFile)
-			if err != nil {
-				if errors.Is(err, os.ErrNotExist) {
-					performUpdate = true
-				} else {
-					return 0, err
-				}
-			} else {
-				performUpdate = resultModTime.Before(documentModTime)
-			}
-		}
-
-		if !performUpdate {
-			continue
-		}
+func processEntryFiles(state *buildState, ds *DocumentSet) error {
+	return ds.ForEach(func(doc *document.Document) error {
+		i := state.Index(doc)
 
 		var docSucc *document.Document
 		if i > 0 {
@@ -369,13 +421,11 @@ func processEntryFiles(state *buildState) (int, error) {
 		}
 
 		if err := writeEntryFile(state, doc, docPred, docSucc); err != nil {
-			return 0, err
+			return err
 		}
 
-		numUpdated++
-	}
-
-	return numUpdated, nil
+		return nil
+	})
 }
 
 func writeEntryFile(
@@ -403,14 +453,14 @@ func writeEntryFile(
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
-	entryFile := filepath.Join(state.buildDirectory, render.EntryFileName(doc))
+	fileName := state.filenamer.EntryFile(doc)
 
-	err = os.WriteFile(entryFile, buf.Bytes(), 0666)
+	err = state.WriteFile(fileName, buf.Bytes())
 	if err != nil {
 		log.Printf("could not write entry file: %s", err)
 	}
 
-	log.Printf("rendered entry '%s'", entryFile)
+	log.Printf("rendered entry '%s'", fileName)
 
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/bgraf/rueckblick/building"
 	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/data"
 	"github.com/bgraf/rueckblick/data/geotrack"
@@ -44,6 +45,8 @@ func runMapCmd(cmd *cobra.Command, args []string) {
 		log.Fatalf("could not load store: %s\n", err)
 	}
 
+	filenamer := building.Filenamer{}
+
 	cfgHome := config.HomeCoords()
 	home := geodist.Coord{Lat: cfgHome.Lat, Lon: cfgHome.Lon}
 	mapThreshold := config.MapThreshold()
@@ -78,8 +81,8 @@ func runMapCmd(cmd *cobra.Command, args []string) {
 
 		if maxDist >= mapThreshold {
 			points = append(points, markerData{
-				URI:     render.EntryURL(doc),
-				Preview: render.PreviewURL(doc),
+				URI:     render.EntryURL(filenamer, doc),
+				Preview: render.PreviewURL(filenamer, doc),
 				LatLng:  maxPoint,
 				Title:   doc.Title,
 				Year:    doc.Date.Year(),
@@ -89,7 +92,7 @@ func runMapCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	templates, err := render.ReadTemplates()
+	templates, err := render.ReadTemplates(building.Filenamer{})
 	if err != nil {
 		log.Fatalf("could not read templates: %s\n", err)
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/goodsign/monday"
 )
 
-func MakeTemplateFuncmap() template.FuncMap {
+func makeTemplateFuncmap() template.FuncMap {
 	tagSet := NewTagSet()
 
 	return template.FuncMap{
