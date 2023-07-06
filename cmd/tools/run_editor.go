@@ -12,7 +12,7 @@ import (
 // User editor is retrieved via configuration `tools.editor`. If the configuration
 // is not set, the environment variable EDITOR is used.
 // An error is returned in case that neither is set.
-func RunEditor(file string) error {
+func RunEditor(file string, workDir string) error {
 	editorName, err := lookupEditor()
 	if err != nil {
 		return err
@@ -23,6 +23,7 @@ func RunEditor(file string) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = workDir
 
 	return cmd.Run()
 }

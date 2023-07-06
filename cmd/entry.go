@@ -278,7 +278,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	}
 
 	if runEditor {
-		if err := tools.RunEditor(entryFile); err != nil {
+		if err := tools.RunEditor(entryFile, entryDir); err != nil {
 			log.Printf("Error: could not run editor: %s\n", err)
 			return err
 		}
