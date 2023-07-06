@@ -25,6 +25,7 @@ import (
 	"github.com/bgraf/rueckblick/config"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
@@ -253,6 +254,10 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		if err := generateGallery(inputDirectory, entryDir); err != nil {
 			log.Printf("Warning: could not generated gallery: %s\n", err)
 		}
+
+		if err := copyExtraFiles(inputDirectory, entryDir); err != nil {
+			log.Printf("Warning: could not copy files: %s\n", err)
+		}
 	}
 
 	fmt.Printf("== Change to entry directory ==\n\ncd %s\n\n", entryDir)
@@ -275,6 +280,39 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	if runEditor {
 		if err := tools.RunEditor(entryFile); err != nil {
 			log.Printf("Error: could not run editor: %s\n", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func copyExtraFiles(inputDirectory string, entryDirectory string) error {
+	configKey := "generate.entry.copy_files_extensions"
+	if !viper.IsSet(configKey) {
+		return nil
+	}
+
+	extensions := viper.GetStringSlice(configKey)
+	if len(extensions) == 0 {
+		return fmt.Errorf("configuration key '%s' has zero entries", configKey)
+	}
+
+	filePaths, err := filesystem.GatherFiles([]string{inputDirectory}, extensions)
+	if err != nil {
+		return fmt.Errorf("scanning files: %w", err)
+	} else if len(filePaths) == 0 {
+		return nil
+	}
+
+	for _, inPath := range filePaths {
+		baseName := path.Base(inPath)
+		outPath := path.Join(entryDirectory, baseName)
+
+		log.Printf("copying extra file '%s'\n", baseName)
+
+		err := filesystem.Copy(inPath, outPath)
+		if err != nil {
 			return err
 		}
 	}
