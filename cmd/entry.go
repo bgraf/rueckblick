@@ -257,6 +257,28 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("== Change to entry directory ==\n\ncd %s\n\n", entryDir)
 
+	// Run editor on resulting file if the user wishes to do so...
+	runEditor := false
+
+	err = survey.AskOne(
+		&survey.Confirm{
+			Message: "Run editor on Markdown file",
+			Default: runEditor,
+		},
+		&runEditor,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	if runEditor {
+		if err := tools.RunEditor(entryFile); err != nil {
+			log.Printf("Error: could not run editor: %s\n", err)
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -280,32 +302,30 @@ func copyGpxTracks(inputDirectory string, entryDirectory string) error {
 	}
 
 	// ask whether to append it to the document
-	shouldContinue := true
+	appendTracksToDocument := true
 
 	prompt := &survey.Confirm{
 		Message: "Append GPX track to document",
-		Default: shouldContinue,
+		Default: appendTracksToDocument,
 	}
 
-	err = survey.AskOne(prompt, &shouldContinue, nil)
+	err = survey.AskOne(prompt, &appendTracksToDocument, nil)
 	if err != nil {
 		return err
 	}
 
-	if !shouldContinue {
-		return nil
-	}
+	if appendTracksToDocument {
+		// Add all tracks to the document.
+		for _, inPath := range filePaths {
+			name := path.Base(inPath)
+			err := filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
+				fmt.Fprintf(f, "\n<%s track=\"%s\"></%s>\n", render.GPXTagName, name, render.GPXTagName)
+				return nil
+			})
 
-	// Add all tracks to the document.
-	for _, inPath := range filePaths {
-		name := path.Base(inPath)
-		err := filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
-			fmt.Fprintf(f, "\n<%s track=\"%s\"></%s>\n", render.GPXTagName, name, render.GPXTagName)
-			return nil
-		})
-
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 
