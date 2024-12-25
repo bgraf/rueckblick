@@ -99,7 +99,7 @@ func Build(opts Options) error {
 			return nil
 		}
 
-		if err := writeIndexFile(state, getPeriod); err != nil {
+		if err := writeIndexFile(state); err != nil {
 			return err
 		}
 
@@ -307,20 +307,61 @@ func writeCalendarFile(
 
 func writeIndexFile(
 	state *buildState,
-	getPeriod func(t time.Time) *document.Period,
 ) error {
 	groups := render.MakeDocumentGroups(state.store.Documents)
-	var buf bytes.Buffer
-	err := state.templates.ExecuteTemplate(&buf, "index.html", map[string]interface{}{
-		"Groups": groups,
-	})
-	if err != nil {
-		return fmt.Errorf("could not execute template: %w", err)
+
+	/* Group by Years */
+	latestYear := 0
+	m := make(map[int][]render.DocumentGroup)
+	for _, group := range groups {
+		year := group.Date.Year()
+		latestYear = max(latestYear, year)
+		m[year] = append(m[year], group)
 	}
 
-	err = state.WriteFile("index.html", buf.Bytes())
-	if err != nil {
-		return fmt.Errorf("could not write index file: %w", err)
+	fmt.Printf("%#v\n", m)
+	fmt.Println("max year", latestYear)
+
+	type yearsMenu struct {
+		Year       int
+		LinkTarget string
+	}
+
+	filenameByYear := func(year int) string {
+		filename := "index.html"
+		if year != latestYear {
+			filename = fmt.Sprintf("index_%d.html", year)
+		}
+		return filename
+	}
+
+	var yearMenus []yearsMenu
+	for year := range m {
+		yearMenus = append(yearMenus, yearsMenu{Year: year, LinkTarget: filenameByYear(year)})
+	}
+
+	// Sort decreasing by year
+	sort.Slice(yearMenus, func(i, j int) bool {
+		return yearMenus[i].Year > yearMenus[j].Year
+	})
+
+	for year, groups := range m {
+		var buf bytes.Buffer
+		err := state.templates.ExecuteTemplate(&buf, "index.html", map[string]interface{}{
+			"YearMenus": yearMenus,
+			"Groups":    groups,
+		})
+		if err != nil {
+			return fmt.Errorf("could not execute template: %w", err)
+		}
+
+		filename := filenameByYear(year)
+
+		err = state.WriteFile(filename, buf.Bytes())
+		if err != nil {
+			return fmt.Errorf("could not write index file: %w", err)
+		}
+
 	}
 
 	return nil

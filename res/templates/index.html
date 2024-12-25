@@ -1,6 +1,13 @@
 {{template "header"}}
 
 {{ if .Tag }}<h1>{{ .Tag}}</h1>{{ end }}
+{{ if .YearMenus }}
+<div class="year-menu">
+    {{ range $ym := .YearMenus }}
+    <a href="{{ $ym.LinkTarget }}">{{ $ym.Year }}</a>
+    {{ end }}
+</div>
+{{ end }}
 {{ range .Groups }}
 <div class="index-group">
     <div class="tag-icon-bar">
@@ -13,37 +20,38 @@
     </div>
 </div>
 {{ range $doc := .Documents }}
-<div class="index-entry{{ if $doc.HasPeriod }} in-period{{ end }}"{{ if $doc.HasPeriod }} title="{{ $doc.FirstPeriod.Name }}"{{ end }}>
-        <div class="index-entry-preview">
-            {{ if $doc.HasPreview }}
-                <img src="{{ $doc | previewURL }}">
-            {{ end }}
-        </div>
-        <div class="index-entry-description">
-            <div class="entry-title-bar">
-                <div class="entry-date">
-                    {{ $doc.Date.Format "2006-01-02" }}
-                </div>
-                <div>
-                    <a href="{{ . | entryURL }}">
-                        <h2>{{ $doc.Title }}</h2>
-                    </a>
-                </div>
+<div class="index-entry{{ if $doc.HasPeriod }} in-period{{ end }}" {{ if $doc.HasPeriod }}
+    title="{{ $doc.FirstPeriod.Name }}" {{ end }}>
+    <div class="index-entry-preview">
+        {{ if $doc.HasPreview }}
+        <img src="{{ $doc | previewURL }}">
+        {{ end }}
+    </div>
+    <div class="index-entry-description">
+        <div class="entry-title-bar">
+            <div class="entry-date">
+                {{ $doc.Date.Format "2006-01-02" }}
             </div>
-        
-            <div class="abstract">
-                {{ if $doc.HasAbstract }} {{ $doc.Abstract }} {{ end }}
-            </div>
-            
-            <div class="tag-icon-bar">
-                <div class="tag-bar">
-                    {{template "tagbar" $doc.Tags}}
-                </div>
-                <div class="tag-bar">
-                    {{ template "icon-bar" $doc }}
-                </div>
+            <div>
+                <a href="{{ . | entryURL }}">
+                    <h2>{{ $doc.Title }}</h2>
+                </a>
             </div>
         </div>
+
+        <div class="abstract">
+            {{ if $doc.HasAbstract }} {{ $doc.Abstract }} {{ end }}
+        </div>
+
+        <div class="tag-icon-bar">
+            <div class="tag-bar">
+                {{template "tagbar" $doc.Tags}}
+            </div>
+            <div class="tag-bar">
+                {{ template "icon-bar" $doc }}
+            </div>
+        </div>
+    </div>
 </div>
 {{ end }}
 {{ end }}
