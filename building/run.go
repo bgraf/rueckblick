@@ -77,7 +77,82 @@ func Build(opts Options) error {
 		return err
 	}
 
-	// TODO: calculate transitively changed documents
+	// Use the build cache to determine additional documents that need rerendering, because
+	// of new neighboring documents.
+	//
+	// Example: assume the current most recent article is X, without any successor. If
+	// we add a new most recent article Y, then X need to point to Y, i.e., X needs to be
+	// rerendered despite not being modified.
+
+	currentCache, err := readBuildCache(state.BuildDirectory)
+	if err != nil {
+		log.Printf("could not read cache: %v\n", err)
+	}
+
+	nextCache := makeBuildCache(state)
+
+	log.Printf("curr cache has %d entries\n", len(currentCache.Documents))
+	log.Printf("next cache has %d entries\n", len(nextCache.Documents))
+
+	addToDocumentSet := func(entry cacheDocument) {
+		for _, doc := range state.store.Documents {
+			if doc.Path == entry.Path {
+				changedDocuments.Add(doc)
+				return
+			}
+		}
+	}
+
+	for i, entry := range nextCache.Documents {
+		iOld := -1
+		for j, e := range currentCache.Documents {
+			if e.Path == entry.Path {
+				iOld = j
+				break
+			}
+		}
+
+		if iOld < 0 {
+			addToDocumentSet(entry)
+			continue
+		}
+
+		if (i == 0) != (iOld == 0) {
+			// Acquired or lost predecessor => rebuild!
+			addToDocumentSet(entry)
+			continue
+		}
+
+		if i > 0 && iOld > 0 {
+			// Compare prior documents
+			prior := nextCache.Documents[i-1]
+			priorOld := currentCache.Documents[iOld-1]
+			if prior.OutputPath != priorOld.OutputPath {
+				addToDocumentSet(entry)
+				continue
+			}
+		}
+
+		if (i+1 == len(nextCache.Documents)) != (iOld+1 == len(currentCache.Documents)) {
+			// Acquired or lost successor => rebuild!
+			addToDocumentSet(entry)
+			continue
+		}
+
+		if i+1 < len(nextCache.Documents) && iOld+1 < len(currentCache.Documents) {
+			succ := nextCache.Documents[i+1]
+			succOld := currentCache.Documents[iOld+1]
+			if succ.OutputPath != succOld.OutputPath {
+				addToDocumentSet(entry)
+				continue
+			}
+		}
+	}
+
+	if changedDocuments.Len() == 0 {
+		fmt.Println(("nothing to do"))
+		return nil
+	}
 
 	if err := processEntryFiles(state, changedDocuments); err != nil {
 		return err
@@ -318,9 +393,6 @@ func writeIndexFile(
 		latestYear = max(latestYear, year)
 		m[year] = append(m[year], group)
 	}
-
-	fmt.Printf("%#v\n", m)
-	fmt.Println("max year", latestYear)
 
 	type yearsMenu struct {
 		Year       int

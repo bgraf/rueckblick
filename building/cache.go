@@ -16,10 +16,11 @@ type buildCache struct {
 }
 
 type cacheDocument struct {
-	Title string         `json:"title"`
-	Tags  []document.Tag `json:"tags"`
-	Date  jsonDate       `json:"date"`
-	Path  string         `json:"path"`
+	Title      string         `json:"title"`
+	Tags       []document.Tag `json:"tags"`
+	Date       jsonDate       `json:"date"`
+	Path       string         `json:"path"`
+	OutputPath string         `json:"outputPath"`
 }
 
 type jsonDate time.Time
@@ -43,21 +44,38 @@ func (j *jsonDate) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-func writeBuildCache(state *buildState) error {
+func readBuildCache(buildDirectory string) (cache buildCache, err error) {
+	payloadBytes, err := os.ReadFile(filepath.Join(buildDirectory, cacheFileName))
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(payloadBytes, &cache)
+	return
+}
+
+func makeBuildCache(state *buildState) buildCache {
 	store := state.store
 
 	cache := buildCache{}
 
 	for _, doc := range store.Documents {
 		cdoc := cacheDocument{
-			Title: doc.Title,
-			Tags:  doc.Tags,
-			Date:  jsonDate(doc.Date),
-			Path:  doc.Path,
+			Title:      doc.Title,
+			Tags:       doc.Tags,
+			Date:       jsonDate(doc.Date),
+			Path:       doc.Path,
+			OutputPath: state.filenamer.EntryFile(doc),
 		}
 
 		cache.Documents = append(cache.Documents, cdoc)
 	}
+
+	return cache
+}
+
+func writeBuildCache(state *buildState) error {
+	cache := makeBuildCache(state)
 
 	jsonBytes, err := json.Marshal(cache)
 	if err != nil {
