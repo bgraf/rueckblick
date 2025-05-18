@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -126,26 +127,43 @@ func runGather(cmd *cobra.Command, args []string) error {
 
 	if noRecurse {
 		processRoot = func(root string) error {
-			entries, err := os.ReadDir(root)
+			entries, err := ioutil.ReadDir(root)
 			if err != nil {
 				return err
 			}
 
 			for _, entry := range entries {
 				path := filepath.Join(root, entry.Name())
-				if err := processFile(path, entry, nil); err != nil {
+				if err := processFile(path, fs.FileInfoToDirEntry(entry), nil); err != nil {
 					return err
 				}
 			}
 
 			return nil
 		}
+		/*
+			processRoot = func(root string) error {
+				entries, err := os.ReadDir(root)
+				if err != nil {
+					return err
+				}
+
+				for _, entry := range entries {
+					path := filepath.Join(root, entry.Name())
+					if err := processFile(path, entry, nil); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			}
+		*/
 	}
 
 	for _, root := range args {
 		log.Printf("scanning root %s\n", root)
 
-		err := processRoot(root)
+		err = processRoot(root)
 		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
