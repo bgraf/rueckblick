@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -322,7 +323,7 @@ func copyExtraFiles(inputDirectory string, entryDirectory string) error {
 
 func copyGpxTracks(inputDirectory string, entryDirectory string) error {
 	// Gather all GPX or NMEA tracks. (NMEA tracks may have .txt extensions)
-	filePaths, err := filesystem.GatherFiles([]string{inputDirectory}, []string{".gpx", ".txt"})
+	filePaths, err := filesystem.GatherFiles([]string{inputDirectory}, slices.Concat(config.NMEAExtensions(), config.GPXExtensions()))
 	if err != nil {
 		return fmt.Errorf("scanning files: %w", err)
 	} else if len(filePaths) == 0 {

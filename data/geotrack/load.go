@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/data/document"
 )
 
@@ -26,9 +28,9 @@ func (p GPXPoint) MarshalJSON() ([]byte, error) {
 
 func LoadTrack(trackFilePath string) (points []GPXPoint, err error) {
 	ext := strings.ToLower(path.Ext(trackFilePath))
-	if ext == ".gpx" {
+	if slices.Contains(config.GPXExtensions(), ext) {
 		points, err = loadGPXTrack(trackFilePath)
-	} else if ext == ".txt" {
+	} else if slices.Contains(config.NMEAExtensions(), ext) {
 		points, err = loadNMEATrack(trackFilePath)
 	} else {
 		return nil, fmt.Errorf("unknown track extension '%s'", ext)
