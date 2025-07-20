@@ -2,8 +2,8 @@ package filesystem
 
 import (
 	"fmt"
-	"io"
 	"os"
+	"os/exec"
 )
 
 func Copy(src, dst string) error {
@@ -16,19 +16,7 @@ func Copy(src, dst string) error {
 		return fmt.Errorf("path '%s' does not denote a file", src)
 	}
 
-	source, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-
-	_, err = io.Copy(destination, source)
-
-	return err
+	// Use system "cp" to preserve timestamps.
+	cpCmd := exec.Command("cp", "--preserve=timestamps", src, dst)
+	return cpCmd.Run()
 }
