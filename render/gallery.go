@@ -62,6 +62,10 @@ func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
 			var err error
 
 			filesExif[i].exif, err = images.ReadEXIFFromFile(filePath)
+			if err != nil {
+				fmt.Printf("EXIF failed: %v => %s\n", filePath, err)
+
+			}
 			_ = err // Note: check `err` to see whether EXIF reading succeeded
 		}
 

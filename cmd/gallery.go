@@ -106,7 +106,7 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 
 func genGallery(opts genGalleryOptions) error {
 	// Gather all image files
-	filePaths, err := filesystem.GatherFiles(opts.Args, []string{".jpeg", ".jpg"})
+	filePaths, err := filesystem.GatherFiles(opts.Args, []string{".jpeg", ".jpg", ".png"})
 	if err != nil {
 		return fmt.Errorf("scanning files: %w", err)
 	} else if len(filePaths) == 0 {

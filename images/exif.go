@@ -1,11 +1,10 @@
 package images
 
 import (
-	"fmt"
-	"os"
+	"bytes"
+	"encoding/json"
+	"os/exec"
 	"time"
-
-	"github.com/rwcarlsen/goexif/exif"
 )
 
 type EXIFData struct {
@@ -13,21 +12,37 @@ type EXIFData struct {
 }
 
 func ReadEXIFFromFile(path string) (*EXIFData, error) {
-	f, err := os.Open(path)
+	command := exec.Command("exiftool", "-json", "-DateTimeOriginal", path)
+	var buffer bytes.Buffer
+	command.Stdout = &buffer
+	if err := command.Run(); err != nil {
+		return nil, err
+	}
+
+	var rawExifData []struct {
+		DateTimeOriginal string `json:"DateTimeOriginal"`
+	}
+
+	if err := json.Unmarshal(buffer.Bytes(), &rawExifData); err != nil {
+		return nil, err
+	}
+
+	dateTimeOriginal, err := time.Parse("2006:01:02 15:04:05", rawExifData[0].DateTimeOriginal)
 	if err != nil {
-		return nil, fmt.Errorf("open failed: %w", err)
+		return nil, err
 	}
 
-	x, err := exif.Decode(f)
-	if err != nil {
-		return nil, fmt.Errorf("exif.Decode failed: %w", err)
-	}
+	dateTimeOriginal = time.Date(
+		dateTimeOriginal.Year(),
+		dateTimeOriginal.Month(),
+		dateTimeOriginal.Day(),
+		dateTimeOriginal.Hour(),
+		dateTimeOriginal.Minute(),
+		dateTimeOriginal.Second(),
+		dateTimeOriginal.Nanosecond(),
+		time.Local,
+	)
 
-	exifData := &EXIFData{}
+	return &EXIFData{Time: &dateTimeOriginal}, nil
 
-	if tm, err := x.DateTime(); err == nil {
-		exifData.Time = &tm
-	}
-
-	return exifData, nil
 }
