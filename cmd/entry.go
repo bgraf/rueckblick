@@ -182,7 +182,7 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	normTitle := normalizeTitle(title)
 	entryDirName := fmt.Sprintf("%s-%s", dateStr, normTitle)
 	entryDir := filepath.Join(journalDirectory, fmt.Sprint(date.Year()), entryDirName)
-	entryFileName := fmt.Sprintf("%s.md", dateStr)
+	entryFileName := fmt.Sprintf("doc_%s.md", dateStr)
 	entryFile := filepath.Join(entryDir, entryFileName)
 
 	log.Printf("entry directory: %s", entryDir)
@@ -251,14 +251,15 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 			log.Printf("Warning: copying GPX tracks failed: %s\n", err)
 		}
 
+		if err := copyExtraFiles(inputDirectory, entryDir); err != nil {
+			log.Printf("Warning: could not copy files: %s\n", err)
+		}
+
 		log.Printf("generating gallery from photos-dir: %s\n", inputDirectory)
 		if err := generateGallery(inputDirectory, entryDir); err != nil {
 			log.Printf("Warning: could not generated gallery: %s\n", err)
 		}
 
-		if err := copyExtraFiles(inputDirectory, entryDir); err != nil {
-			log.Printf("Warning: could not copy files: %s\n", err)
-		}
 	}
 
 	fmt.Printf("== Change to entry directory ==\n\ncd %s\n\n", entryDir)
@@ -306,6 +307,10 @@ func copyExtraFiles(inputDirectory string, entryDirectory string) error {
 		return nil
 	}
 
+	/* Video file extensions */
+	videoConfigKey := "generate.entry.video_extensions"
+	videoExtensions := viper.GetStringSlice(videoConfigKey)
+
 	for _, inPath := range filePaths {
 		baseName := path.Base(inPath)
 		outPath := path.Join(entryDirectory, baseName)
@@ -315,6 +320,18 @@ func copyExtraFiles(inputDirectory string, entryDirectory string) error {
 		err := filesystem.Copy(inPath, outPath)
 		if err != nil {
 			return err
+		}
+
+		/* Add videos to document */
+		if slices.Contains(videoExtensions, path.Ext(baseName)) {
+			err := filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
+				fmt.Fprintf(f, "\n<%s src=\"%s\"></%s>\n", render.VideoTagName, baseName, render.VideoTagName)
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			log.Printf("Added video %s to markdown\n", baseName)
 		}
 	}
 

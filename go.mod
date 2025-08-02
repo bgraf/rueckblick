@@ -17,7 +17,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/tkrajina/gpxgo v1.4.0
-	github.com/yuin/goldmark v1.7.8
+	github.com/yuin/goldmark v1.7.13
 	golang.org/x/net v0.33.0
 	gopkg.in/yaml.v2 v2.4.0
 )

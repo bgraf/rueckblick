@@ -20,6 +20,10 @@ func ImplicitFigure(doc *document.Document) {
 			return
 		}
 
+		if n.FirstChild.Data != "img" {
+			return
+		}
+
 		src, ok := s.Children().Attr("src")
 		if !ok {
 			return

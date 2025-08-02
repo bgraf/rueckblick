@@ -230,6 +230,7 @@ func postprocessDocument(doc *document.Document, opts *StoreOptions) {
 	// Must be executed in this order, because GPX requires populated galleries.
 	render.EmplaceGalleries(doc, toResource)
 	render.EmplaceGPXMaps(doc, toResource)
+	render.EmplaceVideos(doc, toResource)
 
 	doc.IsHtmlProcessed = true
 }
