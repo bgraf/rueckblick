@@ -13,6 +13,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/bgraf/rueckblick/config"
+	"github.com/bgraf/rueckblick/data"
 	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/spf13/cobra"
@@ -21,10 +22,10 @@ import (
 // galleryCmd represents the gallery command
 var galleryCmd = &cobra.Command{
 	Use:   "gallery",
-	Short: "Scale a given set of pictures into a common destination folder",
+	Short: "Copy a given set of pictures into a common destination folder with optinal scaling",
 	Long: `Takes paths of image files or folders which are then searched 
-for image files. All found images are scaled and copied to a given destination
-folder.`,
+for image files. All found images are copied to a given destination
+folder. Optionally, images are scaled.`,
 
 	Args: func(cmd *cobra.Command, args []string) error {
 		hasError := false
@@ -61,7 +62,7 @@ folder.`,
 func init() {
 	genCmd.AddCommand(galleryCmd)
 
-	galleryCmd.Flags().IntP("size", "s", config.DefaultPhotoWidth(), "Maximum width or height of the scaled images")
+	galleryCmd.Flags().IntP("size", "s", 0, "Maximum width or height of the scaled images. If set implies scaling.")
 	galleryCmd.Flags().StringP("output", "o", config.DefaultPhotosDirectory(), "Output directory")
 }
 
@@ -72,9 +73,13 @@ type genGalleryOptions struct {
 	DocumentDirectory      string
 }
 
+func (opts genGalleryOptions) ShouldScale() bool {
+	return opts.Size > 0
+}
+
 func defaultGenGalleryOptions() genGalleryOptions {
 	return genGalleryOptions{
-		Size:                   config.DefaultPhotoWidth(),
+		Size:                   0,
 		TargetGalleryDirectory: config.DefaultPhotosDirectory(),
 	}
 }
@@ -84,9 +89,13 @@ func runGenGallery(cmd *cobra.Command, args []string) error {
 
 	opts := defaultGenGalleryOptions()
 
-	opts.Size, err = cmd.Flags().GetInt("size")
-	if err != nil {
-		log.Fatal(err) // Should not happen
+	if cmd.Flags().Changed("size") {
+		opts.Size, err = cmd.Flags().GetInt("size")
+		if err != nil {
+			log.Fatal(err) // Should not happen
+		}
+
+		log.Printf("scaling images to max %d\n", opts.Size)
 	}
 
 	opts.TargetGalleryDirectory, err = cmd.Flags().GetString("output")
@@ -119,12 +128,38 @@ func genGallery(opts genGalleryOptions) error {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
+	// Create thumbs directory
+	thumbDirectory := filepath.Join(opts.TargetGalleryDirectory, config.DefaultThumbSubdirectory())
+	err = os.MkdirAll(thumbDirectory, 0700)
+	if err != nil {
+		return fmt.Errorf("create thumb directory: %w", err)
+	}
+
 	// Transform images
+	imageTransformer := func(srcPath, dstPath string) error {
+		err := scaleImage(srcPath, dstPath, opts.Size)
+		if err != nil {
+			return err
+		}
+		log.Printf("scaled: %s => %s\n", srcPath, dstPath)
+		return nil
+	}
+	if !opts.ShouldScale() {
+		imageTransformer = func(srcPath, dstPath string) error {
+			err := filesystem.Copy(srcPath, dstPath)
+			if err != nil {
+				return err
+			}
+			log.Printf("copied: %s => %s\n", srcPath, dstPath)
+			return nil
+		}
+	}
+
 	var wg sync.WaitGroup
 	srcFiles := make(chan string)
 	numCPU := runtime.NumCPU()
 
-	for i := 0; i < numCPU; i++ {
+	for range numCPU {
 		wg.Add(1)
 		go func(srcFiles <-chan string) {
 			defer wg.Done()
@@ -135,12 +170,20 @@ func genGallery(opts genGalleryOptions) error {
 				dstExt := destinationImageExtension(srcExt)
 				dstPath := filepath.Join(opts.TargetGalleryDirectory, nameWithoutExt+dstExt)
 
-				err = scaleImage(path, dstPath, opts.Size)
+				err = imageTransformer(path, dstPath)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %s\n", err)
 				}
 
-				fmt.Printf("scaled: %s\n    to: %s\n", path, dstPath)
+				// Create thumbnail
+				thumbPath := data.ThumbnailPath(dstPath)
+				err = scaleImage(dstPath, thumbPath, config.DefaultThumbWidth())
+				if err != nil {
+					log.Printf("Thumb: failed: %s => %s", dstPath, err)
+				} else {
+					log.Printf("Thumb: created %s", thumbPath)
+
+				}
 			}
 		}(srcFiles)
 	}
@@ -158,7 +201,7 @@ func genGallery(opts genGalleryOptions) error {
 		fmt.Fprintf(os.Stderr, "Warning: add to document: %s\n", err)
 	}
 
-	fmt.Println("done")
+	log.Println("done")
 
 	return nil
 }

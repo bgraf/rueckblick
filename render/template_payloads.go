@@ -3,16 +3,16 @@ package render
 import (
 	"time"
 
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
 	"github.com/bgraf/rueckblick/util/dates"
 )
 
 type DocumentGroup struct {
-	Documents []*document.Document
+	Documents []*data.Document
 	Date      time.Time
 }
 
-func MakeDocumentGroups(documents []*document.Document) []DocumentGroup {
+func MakeDocumentGroups(documents []*data.Document) []DocumentGroup {
 	if len(documents) == 0 {
 		return nil
 	}

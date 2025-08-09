@@ -12,7 +12,8 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bgraf/rueckblick/config"
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
+	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/images"
 )
 
@@ -25,11 +26,11 @@ const GalleryTagDirectoryAttrName = "directory"
 // Name of the attribute to specify the include pattern for file names
 const GalleryTagIncludeAttrName = "include"
 
-type MapToResourceFunc func(original string) (document.Resource, bool)
+type MapToResourceFunc func(original string) (data.Resource, bool)
 
 // EmplaceGalleries replaces each `<rb-gallery ... />` node with a collection of nodes representing
 // an actual gallery in HTML code.
-func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
+func EmplaceGalleries(doc *data.Document, toResource MapToResourceFunc) {
 	galleryID := -1
 
 	doc.HTML.Find(GalleryTagName).Each(func(i int, s *goquery.Selection) {
@@ -40,7 +41,7 @@ func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
 			photoDir = path.Join(doc.DocumentDirectory(), photoDir)
 		}
 
-		pat := s.AttrOr(GalleryTagIncludeAttrName, "*.jpg")
+		pat := s.AttrOr(GalleryTagIncludeAttrName, "*.*")
 
 		files, err := collectGalleryImagePaths(photoDir, pat)
 		if err != nil {
@@ -63,7 +64,7 @@ func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
 
 			filesExif[i].exif, err = images.ReadEXIFFromFile(filePath)
 			if err != nil {
-				fmt.Printf("EXIF failed: %v => %s\n", filePath, err)
+				log.Printf("EXIF failed: %v => %s\n", filePath, err)
 
 			}
 			_ = err // Note: check `err` to see whether EXIF reading succeeded
@@ -93,7 +94,7 @@ func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
 
 		// Create gallery in document
 		galleryElementID := fmt.Sprintf("gallery-%d", galleryID)
-		gallery := &document.Gallery{
+		gallery := &data.Gallery{
 			ElementID: galleryElementID,
 		}
 		doc.Galleries = append(doc.Galleries, gallery)
@@ -109,7 +110,6 @@ func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
 				t = file.exif.Time
 			}
 
-			_ = t
 			resource, ok := toResource(file.path)
 			if !ok {
 				continue
@@ -117,12 +117,23 @@ func EmplaceGalleries(doc *document.Document, toResource MapToResourceFunc) {
 
 			gallery.AppendImage(resource, file.path, t)
 
+			// Fetch thumbnail
+			thumb := data.ThumbnailPath(file.path)
+			if !filesystem.Exists(thumb) {
+				thumb = file.path
+				log.Printf("Thumb does not exist, using original file: %s", file.path)
+			}
+
 			resPath := resource.URI
+			thumbRes, ok := toResource(thumb)
+			if !ok {
+				continue
+			}
 
 			buf.WriteString("<div class=\"gallery-entry\"><a href=\"")
 			buf.WriteString(resPath)
 			buf.WriteString("\"><img class=\"gallery-item\" src=\"")
-			buf.WriteString(resPath)
+			buf.WriteString(thumbRes.URI) // TODO <-- durch Thumbnail ersetzen
 			buf.WriteString("\"")
 
 			if file.exif != nil && file.exif.Time != nil {

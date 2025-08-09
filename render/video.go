@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
 	"golang.org/x/net/html"
 )
 
@@ -16,7 +16,7 @@ import (
 const VideoTagName = "rb-video"
 const VideoSrcAttributeName = "src"
 
-func EmplaceVideos(doc *document.Document, toResource MapToResourceFunc) {
+func EmplaceVideos(doc *data.Document, toResource MapToResourceFunc) {
 	doc.HTML.Find(VideoTagName).Each(func(i int, s *goquery.Selection) {
 		srcAttr := strings.TrimSpace(s.AttrOr(VideoSrcAttributeName, ""))
 		if len(srcAttr) == 0 {

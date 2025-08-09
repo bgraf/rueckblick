@@ -3,9 +3,12 @@ package images
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os/exec"
 	"time"
 )
+
+var ErrNoExif = errors.New("no EXIF data")
 
 type EXIFData struct {
 	Time *time.Time
@@ -25,6 +28,10 @@ func ReadEXIFFromFile(path string) (*EXIFData, error) {
 
 	if err := json.Unmarshal(buffer.Bytes(), &rawExifData); err != nil {
 		return nil, err
+	}
+
+	if len(rawExifData[0].DateTimeOriginal) == 0 {
+		return nil, ErrNoExif
 	}
 
 	dateTimeOriginal, err := time.Parse("2006:01:02 15:04:05", rawExifData[0].DateTimeOriginal)

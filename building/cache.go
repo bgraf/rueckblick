@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
 )
 
 const cacheFileName = "cache.json"
@@ -16,11 +16,11 @@ type buildCache struct {
 }
 
 type cacheDocument struct {
-	Title      string         `json:"title"`
-	Tags       []document.Tag `json:"tags"`
-	Date       jsonDate       `json:"date"`
-	Path       string         `json:"path"`
-	OutputPath string         `json:"outputPath"`
+	Title      string     `json:"title"`
+	Tags       []data.Tag `json:"tags"`
+	Date       jsonDate   `json:"date"`
+	Path       string     `json:"path"`
+	OutputPath string     `json:"outputPath"`
 }
 
 type jsonDate time.Time

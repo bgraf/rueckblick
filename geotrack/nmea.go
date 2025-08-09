@@ -8,7 +8,7 @@ import (
 	"github.com/adrianmo/go-nmea"
 )
 
-func loadNMEATrack(trackFilePath string) (points []GPXPoint, err error) {
+func LoadNMEATrack(trackFilePath string) (points []GPXPoint, err error) {
 	f, err := os.Open(trackFilePath)
 	if err != nil {
 		return

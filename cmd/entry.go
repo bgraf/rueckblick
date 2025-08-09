@@ -16,7 +16,6 @@ import (
 
 	"github.com/bgraf/rueckblick/cmd/tools"
 	"github.com/bgraf/rueckblick/data"
-	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
@@ -194,9 +193,9 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 		tagMap = nil
 	}
 
-	frontMatter := document.FrontMatter{
+	frontMatter := data.FrontMatter{
 		Title:    title,
-		Date:     document.YamlDate(date),
+		Date:     data.YamlDate(date),
 		Author:   author,
 		Tags:     tagMap,
 		Abstract: abstract,
@@ -371,7 +370,7 @@ func copyGpxTracks(inputDirectory string, entryDirectory string) error {
 	}
 
 	if appendTracksToDocument {
-		// Add all tracks to the document.
+		// Add all tracks to the data.
 		for _, inPath := range filePaths {
 			name := path.Base(inPath)
 			err := filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
@@ -431,7 +430,7 @@ func generatePreview(documentDirectory string, galleryDirectory string) error {
 	return genPreview(opts)
 }
 
-func writeFrontMatter(f io.Writer, fm document.FrontMatter) error {
+func writeFrontMatter(f io.Writer, fm data.FrontMatter) error {
 	fmt.Fprintln(f, "---")
 
 	enc := yaml.NewEncoder(f)

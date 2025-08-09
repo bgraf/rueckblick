@@ -1,7 +1,7 @@
 package render
 
 import (
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
 	"github.com/lucasb-eyer/go-colorful"
 )
 
@@ -21,7 +21,7 @@ func (ts *TagSet) HexColor(tag string) string {
 		ok bool
 	)
 
-	normTag := document.NormalizeTagName(tag)
+	normTag := data.NormalizeTagName(tag)
 	if c, ok = ts.colors[normTag]; !ok {
 		c = colorful.HappyColor()
 		ts.colors[normTag] = c

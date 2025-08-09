@@ -1,4 +1,4 @@
-package document
+package data
 
 import (
 	"path"
@@ -116,4 +116,8 @@ func (doc *Document) PreviewAbsolutePath() string {
 	}
 
 	return filepath.Join(doc.DocumentDirectory(), doc.Preview)
+}
+
+func (doc *Document) ThumbnailPath(image string) string {
+	return ThumbnailPath(image)
 }

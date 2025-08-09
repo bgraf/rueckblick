@@ -12,8 +12,8 @@ import (
 	"github.com/bgraf/rueckblick/building"
 	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/data"
-	"github.com/bgraf/rueckblick/data/geotrack"
 	"github.com/bgraf/rueckblick/filesystem"
+	"github.com/bgraf/rueckblick/geotrack"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/jftuga/geodist"
 	"github.com/spf13/cobra"
@@ -64,7 +64,7 @@ func runMapCmd(cmd *cobra.Command, args []string) {
 		var maxPoint geotrack.GPXPoint
 
 		for _, m := range maps {
-			ps, err := geotrack.LoadTrack(m.GPXPath)
+			ps, err := data.LoadTrack(m.GPXPath)
 			if err != nil {
 				log.Fatalf("could not load track %s: %s", m.GPXPath, err)
 			}

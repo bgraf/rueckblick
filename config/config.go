@@ -41,12 +41,16 @@ func DefaultPhotosDirectory() string {
 	return "photos"
 }
 
-func DefaultGPXFile() string {
-	return "track.gpx"
+func DefaultThumbSubdirectory() string {
+	return "thumbs"
 }
 
-func DefaultPhotoWidth() int {
-	return 2000
+func DefaultThumbWidth() int {
+	return 360
+}
+
+func DefaultGPXFile() string {
+	return "track.gpx"
 }
 
 func DefaultPreviewWidth() int {

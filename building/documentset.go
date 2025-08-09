@@ -1,22 +1,22 @@
 package building
 
-import "github.com/bgraf/rueckblick/data/document"
+import "github.com/bgraf/rueckblick/data"
 
 type DocumentSet struct {
-	byPath map[string]*document.Document
+	byPath map[string]*data.Document
 }
 
 func NewDocumentSet() *DocumentSet {
 	return &DocumentSet{
-		byPath: make(map[string]*document.Document),
+		byPath: make(map[string]*data.Document),
 	}
 }
 
-func (s *DocumentSet) Add(d *document.Document) {
+func (s *DocumentSet) Add(d *data.Document) {
 	s.byPath[d.Path] = d
 }
 
-func (s *DocumentSet) ForEach(f func(*document.Document) error) error {
+func (s *DocumentSet) ForEach(f func(*data.Document) error) error {
 	for _, d := range s.byPath {
 		if err := f(d); err != nil {
 			return err

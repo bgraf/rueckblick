@@ -2,6 +2,7 @@ package data
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -12,9 +13,8 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/filesystem"
-	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
@@ -22,23 +22,23 @@ import (
 )
 
 type StoreOptions struct {
-	RenderImagePath func(doc *document.Document, srcPath string) (document.Resource, bool)
+	RenderImagePath func(doc *Document, srcPath string) (Resource, bool)
 }
 
 type Store struct {
 	RootDirectory       string
-	Documents           []*document.Document
-	Periods             []document.Period
-	tagByNormalizedName map[string]document.Tag
-	tags                []document.Tag
-	options             *StoreOptions
+	Documents           []*Document
+	Periods             []Period
+	tagByNormalizedName map[string]Tag
+	tags                []Tag
+	Options             *StoreOptions
 }
 
 func NewStore(rootDirectory string, options *StoreOptions) (*Store, error) {
 	store := &Store{
 		RootDirectory:       rootDirectory,
-		tagByNormalizedName: make(map[string]document.Tag),
-		options:             options,
+		tagByNormalizedName: make(map[string]Tag),
+		Options:             options,
 	}
 
 	var err error
@@ -74,8 +74,8 @@ func (s *Store) SortDocumentsByDate() {
 	})
 }
 
-func (s *Store) DocumentsOnDate(t time.Time) []*document.Document {
-	var docs []*document.Document
+func (s *Store) DocumentsOnDate(t time.Time) []*Document {
+	var docs []*Document
 
 	for _, doc := range s.Documents {
 		if dates.EqualDate(doc.Date, t) {
@@ -86,10 +86,10 @@ func (s *Store) DocumentsOnDate(t time.Time) []*document.Document {
 	return docs
 }
 
-func (s *Store) DocumentsByTagName(name string) []*document.Document {
-	name = document.NormalizeTagName(name)
+func (s *Store) DocumentsByTagName(name string) []*Document {
+	name = NormalizeTagName(name)
 
-	var result []*document.Document
+	var result []*Document
 
 	for _, doc := range s.Documents {
 		for _, t := range doc.Tags {
@@ -104,12 +104,12 @@ func (s *Store) DocumentsByTagName(name string) []*document.Document {
 	return result
 }
 
-func (s *Store) Tags() []document.Tag {
+func (s *Store) Tags() []Tag {
 	return s.tags
 }
 
-func (s *Store) TagsByCategory() map[string][]document.Tag {
-	groups := make(map[string][]document.Tag)
+func (s *Store) TagsByCategory() map[string][]Tag {
+	groups := make(map[string][]Tag)
 	for _, tag := range s.Tags() {
 		groups[tag.Category] = append(groups[tag.Category], tag)
 	}
@@ -125,16 +125,18 @@ func (s *Store) SortTags() {
 	)
 }
 
-func (s *Store) GetHtmlFragment(doc *document.Document) (string, error) {
+var ErrHtmlNotProcessed = errors.New("HTML not processed")
+
+func (s *Store) GetHtmlFragment(doc *Document) (string, error) {
 	if !doc.IsHtmlProcessed {
-		postprocessDocument(doc, s.options)
+		return "", ErrHtmlNotProcessed
 	}
 
 	return doc.HTML.Find("body").Html()
 }
 
-func (s *Store) loadDocuments(rootDirectory string) ([]*document.Document, error) {
-	var docs []*document.Document
+func (s *Store) loadDocuments(rootDirectory string) ([]*Document, error) {
+	var docs []*Document
 
 	err := filepath.WalkDir(rootDirectory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -176,18 +178,18 @@ func (s *Store) loadDocuments(rootDirectory string) ([]*document.Document, error
 	return docs, nil
 }
 
-func (s *Store) loadDocument(path string) (*document.Document, error) {
+func (s *Store) loadDocument(path string) (*Document, error) {
 	sourceText, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not read source file: %w", err)
 	}
 
-	doc := &document.Document{
+	doc := &Document{
 		Path:            path,
 		IsHtmlProcessed: false,
 	}
 
-	sourceText, err = document.ReadFrontMatter(doc, sourceText)
+	sourceText, err = ReadFrontMatter(doc, sourceText)
 	if err != nil {
 		return nil, fmt.Errorf("could not read front matter: %w", err)
 	}
@@ -211,26 +213,6 @@ func (s *Store) loadDocument(path string) (*document.Document, error) {
 	return doc, nil
 }
 
-// postprocessDocument modifies the rendered document by replacing links, image and video sources.
-func postprocessDocument(doc *document.Document, opts *StoreOptions) {
-	render.ImplicitFigure(doc)
-
-	toResource := func(original string) (document.Resource, bool) {
-		srcPath := original
-		if !filepath.IsAbs(original) {
-			srcPath = filepath.Join(filepath.Dir(doc.Path), original)
-		}
-		resource, _ := opts.RenderImagePath(doc, srcPath)
-
-		return resource, true
-	}
-
-	render.RecodePaths(doc, toResource)
-
-	// Must be executed in this order, because GPX requires populated galleries.
-	render.EmplaceGalleries(doc, toResource)
-	render.EmplaceGPXMaps(doc, toResource)
-	render.EmplaceVideos(doc, toResource)
-
-	doc.IsHtmlProcessed = true
+func ThumbnailPath(image string) string {
+	return filepath.Join(filepath.Dir(image), config.DefaultThumbSubdirectory(), filepath.Base(image))
 }

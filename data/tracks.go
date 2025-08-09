@@ -1,7 +1,6 @@
-package geotrack
+package data
 
 import (
-	"encoding/json"
 	"fmt"
 	"path"
 	"slices"
@@ -9,29 +8,20 @@ import (
 	"time"
 
 	"github.com/bgraf/rueckblick/config"
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/geotrack"
 )
 
 type GPXLocatedImage struct {
 	URI    string
-	LatLng GPXPoint
+	LatLng geotrack.GPXPoint
 }
 
-type GPXPoint struct {
-	Lat, Lon float64
-	Time     time.Time
-}
-
-func (p GPXPoint) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]float64{p.Lat, p.Lon})
-}
-
-func LoadTrack(trackFilePath string) (points []GPXPoint, err error) {
+func LoadTrack(trackFilePath string) (points []geotrack.GPXPoint, err error) {
 	ext := strings.ToLower(path.Ext(trackFilePath))
 	if slices.Contains(config.GPXExtensions(), ext) {
-		points, err = loadGPXTrack(trackFilePath)
+		points, err = geotrack.LoadGPXTrack(trackFilePath)
 	} else if slices.Contains(config.NMEAExtensions(), ext) {
-		points, err = loadNMEATrack(trackFilePath)
+		points, err = geotrack.LoadNMEATrack(trackFilePath)
 	} else {
 		return nil, fmt.Errorf("unknown track extension '%s'", ext)
 	}
@@ -45,7 +35,7 @@ func LoadTrack(trackFilePath string) (points []GPXPoint, err error) {
 
 // LoadTrackWithImages loads a track file from the given file path and correlates the documents images with
 // the track's points.
-func LoadTrackWithImages(doc *document.Document, trackFilePath string) (points []GPXPoint, images []GPXLocatedImage, err error) {
+func LoadTrackWithImages(doc *Document, trackFilePath string) (points []geotrack.GPXPoint, images []GPXLocatedImage, err error) {
 	points, err = LoadTrack(trackFilePath)
 	if err != nil {
 		return
@@ -55,7 +45,7 @@ func LoadTrackWithImages(doc *document.Document, trackFilePath string) (points [
 	return
 }
 
-func findMatchingImages(doc *document.Document, points []GPXPoint) []GPXLocatedImage {
+func findMatchingImages(doc *Document, points []geotrack.GPXPoint) []GPXLocatedImage {
 	var locatedImages []GPXLocatedImage
 
 	for _, gal := range doc.Galleries {
@@ -71,7 +61,7 @@ func findMatchingImages(doc *document.Document, points []GPXPoint) []GPXLocatedI
 					locatedImages,
 					GPXLocatedImage{
 						URI:    img.Resource.URI,
-						LatLng: GPXPoint{Lat: nearest.Lat, Lon: nearest.Lon},
+						LatLng: geotrack.GPXPoint{Lat: nearest.Lat, Lon: nearest.Lon},
 					},
 				)
 			}
@@ -81,7 +71,7 @@ func findMatchingImages(doc *document.Document, points []GPXPoint) []GPXLocatedI
 	return locatedImages
 }
 
-func findClosestPointInTime(points []GPXPoint, targetTime time.Time) (GPXPoint, time.Duration) {
+func findClosestPointInTime(points []geotrack.GPXPoint, targetTime time.Time) (geotrack.GPXPoint, time.Duration) {
 	absDuration := func(d time.Duration) time.Duration {
 		if d < 0 {
 			return -d

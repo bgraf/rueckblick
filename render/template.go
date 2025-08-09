@@ -5,36 +5,36 @@ import (
 	"html/template"
 	"time"
 
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
 	"github.com/bgraf/rueckblick/res"
 )
 
 type Filenamer interface {
-	EntryFile(doc *document.Document) string
+	EntryFile(doc *data.Document) string
 	CalendarFile(year, month int) string
-	TagFile(tag document.Tag) string
+	TagFile(tag data.Tag) string
 }
 
-func EntryURL(f Filenamer, doc *document.Document) string {
+func EntryURL(f Filenamer, doc *data.Document) string {
 	return fmt.Sprintf("./%s", f.EntryFile(doc))
 }
 
-func PreviewURL(f Filenamer, doc *document.Document) string {
+func PreviewURL(f Filenamer, doc *data.Document) string {
 	return fmt.Sprintf("file://%s", doc.PreviewAbsolutePath())
 }
 
 func ReadTemplates(f Filenamer) (*template.Template, error) {
 	funcMap := makeTemplateFuncmap()
 
-	funcMap["previewURL"] = func(doc *document.Document) template.URL {
+	funcMap["previewURL"] = func(doc *data.Document) template.URL {
 		return template.URL(PreviewURL(f, doc))
 	}
 
-	funcMap["entryURL"] = func(doc *document.Document) string {
+	funcMap["entryURL"] = func(doc *data.Document) string {
 		return EntryURL(f, doc)
 	}
 
-	funcMap["tagURL"] = func(tag document.Tag) template.URL {
+	funcMap["tagURL"] = func(tag data.Tag) template.URL {
 		return template.URL(f.TagFile(tag))
 	}
 

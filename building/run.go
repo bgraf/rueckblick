@@ -9,12 +9,13 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bgraf/rueckblick/data"
-	"github.com/bgraf/rueckblick/data/document"
 	"github.com/bgraf/rueckblick/filesystem"
 	"github.com/bgraf/rueckblick/render"
 	"github.com/bgraf/rueckblick/res"
@@ -31,14 +32,14 @@ func normalizeFileName(s string) string {
 type Filenamer struct {
 }
 
-func (f Filenamer) EntryFile(doc *document.Document) string {
+func (f Filenamer) EntryFile(doc *data.Document) string {
 	title := normalizeFileName(doc.Title)
 	return fmt.Sprintf("%s-%s.html", doc.Date.Format("2006-01-02"), title)
 }
 func (f Filenamer) CalendarFile(year, month int) string {
 	return fmt.Sprintf("cal-%04d-%02d.html", year, month)
 }
-func (f Filenamer) TagFile(tag document.Tag) string {
+func (f Filenamer) TagFile(tag data.Tag) string {
 	title := normalizeFileName(tag.Normalize())
 	return fmt.Sprintf("tag-%s.html", title)
 }
@@ -159,14 +160,14 @@ func Build(opts Options) error {
 	}
 
 	if changedDocuments.Len() > 0 {
-		periodByDate := make(map[time.Time]document.Period)
+		periodByDate := make(map[time.Time]data.Period)
 		for _, period := range store.Periods {
 			dates.ForEachDay(period.From, period.To, func(t time.Time) {
 				periodByDate[dates.ToLocal(t)] = period
 			})
 		}
 
-		getPeriod := func(t time.Time) *document.Period {
+		getPeriod := func(t time.Time) *data.Period {
 			if p, ok := periodByDate[t]; ok {
 				return &p
 			}
@@ -222,7 +223,7 @@ func (state *buildState) Initialize() {
 	state.indexbyPath = indexbyPath
 }
 
-func (state *buildState) Index(d *document.Document) int {
+func (state *buildState) Index(d *data.Document) int {
 	if idx, ok := state.indexbyPath[d.Path]; ok {
 		return idx
 	}
@@ -280,7 +281,7 @@ type isValidDate = func(t time.Time) bool
 
 func writeCalendarFiles(
 	state *buildState,
-	getPeriod func(t time.Time) *document.Period,
+	getPeriod func(t time.Time) *data.Period,
 ) error {
 	store := state.store
 
@@ -315,12 +316,12 @@ func writeCalendarFile(
 	state *buildState,
 	year, month int,
 	isValidDate isValidDate,
-	getPeriod func(t time.Time) *document.Period,
+	getPeriod func(t time.Time) *data.Period,
 ) error {
 	type calendarDay struct {
 		Date     time.Time
-		Document *document.Document
-		Period   *document.Period
+		Document *data.Document
+		Period   *data.Period
 	}
 
 	var calendarDays []calendarDay
@@ -331,7 +332,7 @@ func writeCalendarFile(
 	endDate = dates.NextSunday(endDate)
 
 	dates.ForEachDay(startDate, endDate, func(curr time.Time) {
-		var doc *document.Document
+		var doc *data.Document
 
 		if docs := state.store.DocumentsOnDate(curr); len(docs) > 0 {
 			doc = docs[0]
@@ -444,7 +445,7 @@ func writeTagsIndexFile(state *buildState) error {
 	tagsByCategory := state.store.TagsByCategory()
 	tags := []struct {
 		Category string
-		Tags     []document.Tag
+		Tags     []data.Tag
 	}{
 		{
 			Category: "Orte",
@@ -520,33 +521,52 @@ func writeTagFiles(state *buildState) error {
 }
 
 func processEntryFiles(state *buildState, ds *DocumentSet) error {
-	return ds.ForEach(func(doc *document.Document) error {
-		i := state.Index(doc)
+	var wg sync.WaitGroup
+	docs := make(chan *data.Document)
 
-		var docSucc *document.Document
-		if i > 0 {
-			docSucc = state.store.Documents[i-1]
-		}
+	for range runtime.NumCPU() {
+		wg.Add(1)
+		go func(docs <-chan *data.Document) {
+			defer wg.Done()
+			for doc := range docs {
+				i := state.Index(doc)
 
-		var docPred *document.Document
-		if i+1 < len(state.store.Documents) {
-			docPred = state.store.Documents[i+1]
-		}
+				var docSucc *data.Document
+				if i > 0 {
+					docSucc = state.store.Documents[i-1]
+				}
 
-		if err := writeEntryFile(state, doc, docPred, docSucc); err != nil {
-			return err
-		}
+				var docPred *data.Document
+				if i+1 < len(state.store.Documents) {
+					docPred = state.store.Documents[i+1]
+				}
 
+				if err := writeEntryFile(state, doc, docPred, docSucc); err != nil {
+					// TODO: report error
+				}
+			}
+		}(docs)
+	}
+
+	ds.ForEach(func(doc *data.Document) error {
+		docs <- doc
 		return nil
 	})
+	close(docs)
+
+	wg.Wait()
+
+	return nil
 }
 
 func writeEntryFile(
 	state *buildState,
-	doc *document.Document,
-	docPred *document.Document,
-	docSucc *document.Document,
+	doc *data.Document,
+	docPred *data.Document,
+	docSucc *data.Document,
 ) error {
+	render.Render(doc, *state.store.Options)
+
 	// Extract body fragment
 	fragment, err := state.store.GetHtmlFragment(doc)
 	if err != nil {

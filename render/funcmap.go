@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
 	"github.com/bgraf/rueckblick/util/dates"
 	"github.com/goodsign/monday"
 )
@@ -15,10 +15,10 @@ func makeTemplateFuncmap() template.FuncMap {
 	tagSet := NewTagSet()
 
 	return template.FuncMap{
-		"tagColor": func(tag document.Tag) string {
+		"tagColor": func(tag data.Tag) string {
 			return tagSet.HexColor(tag.String())
 		},
-		"tagDisplay": func(tag document.Tag) template.HTML {
+		"tagDisplay": func(tag data.Tag) template.HTML {
 			switch tag.Category {
 			case "location":
 				return template.HTML(fmt.Sprintf("<i class=\"icon-map-pin-line icon-small\"></i> %s", tag.String()))
@@ -70,7 +70,7 @@ func makeTemplateFuncmap() template.FuncMap {
 }
 
 func TagIdentifier(tag string) string {
-	tag = document.NormalizeTagName(tag)
+	tag = data.NormalizeTagName(tag)
 	return tag
 }
 

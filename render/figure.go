@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
 	"golang.org/x/net/html"
 )
 
-func ImplicitFigure(doc *document.Document) {
+func ImplicitFigure(doc *data.Document) {
 	doc.HTML.Find("p").Each(func(i int, s *goquery.Selection) {
 		n := s.Nodes[0]
 

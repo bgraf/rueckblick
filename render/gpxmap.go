@@ -8,8 +8,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bgraf/rueckblick/config"
-	"github.com/bgraf/rueckblick/data/document"
-	"github.com/bgraf/rueckblick/data/geotrack"
+	"github.com/bgraf/rueckblick/data"
 )
 
 // Name of a markdown document tag for GPX tracks
@@ -23,7 +22,7 @@ const GPXTagTrackAtteName = "track"
 //
 // Note: requires that the `doc.Galleries` are populated, otherwise matching of images to
 // locations will yield no results.
-func EmplaceGPXMaps(doc *document.Document, toResource MapToResourceFunc) {
+func EmplaceGPXMaps(doc *data.Document, toResource MapToResourceFunc) {
 	mapID := -1
 	doc.HTML.Find(GPXTagName).Each(func(i int, s *goquery.Selection) {
 		mapID++
@@ -33,7 +32,7 @@ func EmplaceGPXMaps(doc *document.Document, toResource MapToResourceFunc) {
 			trackFile = path.Join(doc.DocumentDirectory(), trackFile)
 		}
 
-		points, images, err := geotrack.LoadTrackWithImages(doc, trackFile)
+		points, images, err := data.LoadTrackWithImages(doc, trackFile)
 		if err != nil {
 			panic(err)
 		}
@@ -49,7 +48,7 @@ func EmplaceGPXMaps(doc *document.Document, toResource MapToResourceFunc) {
 		}
 
 		mapElementID := fmt.Sprintf("map-%d", mapID)
-		doc.Maps = append(doc.Maps, document.GXPMap{
+		doc.Maps = append(doc.Maps, data.GXPMap{
 			GPXPath:   trackFile,
 			ElementID: mapElementID,
 		})
@@ -79,9 +78,9 @@ func EmplaceGPXMaps(doc *document.Document, toResource MapToResourceFunc) {
 }
 
 // GeoMaps finds all track files embedded in the document.
-func GeoMaps(doc *document.Document) []document.GXPMap {
+func GeoMaps(doc *data.Document) []data.GXPMap {
 	mapID := -1
-	var maps []document.GXPMap
+	var maps []data.GXPMap
 
 	doc.HTML.Find(GPXTagName).Each(func(i int, s *goquery.Selection) {
 		mapID++
@@ -92,7 +91,7 @@ func GeoMaps(doc *document.Document) []document.GXPMap {
 		}
 
 		mapElementID := fmt.Sprintf("map-%d", mapID)
-		maps = append(doc.Maps, document.GXPMap{
+		maps = append(doc.Maps, data.GXPMap{
 			GPXPath:   trackFile,
 			ElementID: mapElementID,
 		})

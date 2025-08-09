@@ -11,7 +11,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/bgraf/rueckblick/config"
-	"github.com/bgraf/rueckblick/data/document"
+	"github.com/bgraf/rueckblick/data"
 	"gopkg.in/yaml.v2"
 
 	"github.com/disintegration/imaging"
@@ -207,15 +207,15 @@ func includeInFrontMatter(cwd string, outputFilePath string) error {
 	return nil
 }
 
-func readFrontMatterAndSource(file string) (document.FrontMatter, []byte, error) {
-	var fm document.FrontMatter
+func readFrontMatterAndSource(file string) (data.FrontMatter, []byte, error) {
+	var fm data.FrontMatter
 
 	source, err := os.ReadFile(file)
 	if err != nil {
 		return fm, nil, err
 	}
 
-	fmSrc, rest, err := document.SplitFrontMatterSource(source)
+	fmSrc, rest, err := data.SplitFrontMatterSource(source)
 	if err != nil {
 		return fm, nil, err
 	}

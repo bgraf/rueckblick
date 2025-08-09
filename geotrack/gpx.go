@@ -6,7 +6,7 @@ import (
 	"github.com/tkrajina/gpxgo/gpx"
 )
 
-func loadGPXTrack(trackFilePath string) (points []GPXPoint, err error) {
+func LoadGPXTrack(trackFilePath string) (points []GPXPoint, err error) {
 	gpxData, err := gpx.ParseFile(trackFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("read GPX file: %w", err)
