@@ -234,7 +234,9 @@ func runGenEntry(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	err = writeFrontMatter(f, frontMatter)
 	if err != nil {
@@ -324,7 +326,7 @@ func copyExtraFiles(inputDirectory string, entryDirectory string) error {
 		/* Add videos to document */
 		if slices.Contains(videoExtensions, path.Ext(baseName)) {
 			err := filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
-				fmt.Fprintf(f, "\n<%s src=\"%s\"></%s>\n", render.VideoTagName, baseName, render.VideoTagName)
+				_, _ = fmt.Fprintf(f, "\n<%s src=\"%s\"></%s>\n", render.VideoTagName, baseName, render.VideoTagName)
 				return nil
 			})
 			if err != nil {
@@ -374,7 +376,7 @@ func copyGpxTracks(inputDirectory string, entryDirectory string) error {
 		for _, inPath := range filePaths {
 			name := path.Base(inPath)
 			err := filesystem.FindAndAppendToMarkdown(entryDirectory, func(f io.Writer, path string) error {
-				fmt.Fprintf(f, "\n<%s track=\"%s\"></%s>\n", render.GPXTagName, name, render.GPXTagName)
+				_, _ = fmt.Fprintf(f, "\n<%s track=\"%s\"></%s>\n", render.GPXTagName, name, render.GPXTagName)
 				return nil
 			})
 
@@ -431,7 +433,7 @@ func generatePreview(documentDirectory string, galleryDirectory string) error {
 }
 
 func writeFrontMatter(f io.Writer, fm data.FrontMatter) error {
-	fmt.Fprintln(f, "---")
+	_, _ = fmt.Fprintln(f, "---")
 
 	enc := yaml.NewEncoder(f)
 	err := enc.Encode(fm)
@@ -439,7 +441,7 @@ func writeFrontMatter(f io.Writer, fm data.FrontMatter) error {
 		return err
 	}
 
-	fmt.Fprintln(f, "---")
+	_, _ = fmt.Fprintln(f, "---")
 
 	return nil
 }

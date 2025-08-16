@@ -14,7 +14,7 @@ func LoadNMEATrack(trackFilePath string) (points []GPXPoint, err error) {
 		return
 	}
 
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
 

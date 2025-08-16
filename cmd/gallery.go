@@ -261,7 +261,7 @@ func addGalleryToDocument(opts genGalleryOptions) error {
 			dirAttr = fmt.Sprintf(`%s="%s"`, render.GalleryTagDirectoryAttrName, galleryRelPath)
 		}
 
-		fmt.Fprintf(f, "\n<%s %s></%s>\n", render.GalleryTagName, dirAttr, render.GalleryTagName)
+		_, _ = fmt.Fprintf(f, "\n<%s %s></%s>\n", render.GalleryTagName, dirAttr, render.GalleryTagName)
 
 		return nil
 	})

@@ -15,9 +15,10 @@ type GXPMap struct {
 }
 
 type Image struct {
-	FilePath  string
-	Resource  Resource
-	Timestamp *time.Time
+	FilePath      string
+	Resource      Resource
+	ThumbResource Resource
+	Timestamp     *time.Time
 }
 
 type Gallery struct {
@@ -25,13 +26,14 @@ type Gallery struct {
 	Images    []Image
 }
 
-func (g *Gallery) AppendImage(res Resource, filePath string, timestamp *time.Time) {
+func (g *Gallery) AppendImage(res Resource, thumbRes Resource, filePath string, timestamp *time.Time) {
 	g.Images = append(
 		g.Images,
 		Image{
-			FilePath:  filePath,
-			Resource:  res,
-			Timestamp: timestamp,
+			FilePath:      filePath,
+			Resource:      res,
+			ThumbResource: thumbRes,
+			Timestamp:     timestamp,
 		},
 	)
 }

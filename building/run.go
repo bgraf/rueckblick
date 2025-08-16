@@ -548,7 +548,7 @@ func processEntryFiles(state *buildState, ds *DocumentSet) error {
 		}(docs)
 	}
 
-	ds.ForEach(func(doc *data.Document) error {
+	_ = ds.ForEach(func(doc *data.Document) error {
 		docs <- doc
 		return nil
 	})

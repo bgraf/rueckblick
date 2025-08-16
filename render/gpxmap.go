@@ -38,7 +38,7 @@ func EmplaceGPXMaps(doc *data.Document, toResource MapToResourceFunc) {
 		}
 
 		// Build json payload
-		payload := map[string]interface{}{
+		payload := map[string]any{
 			"track":  points,
 			"images": images,
 		}

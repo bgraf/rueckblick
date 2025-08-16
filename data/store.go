@@ -159,7 +159,7 @@ func (s *Store) loadDocuments(rootDirectory string) ([]*Document, error) {
 
 		// Add additional tags
 		for _, period := range s.Periods {
-			if !(period.From.After(doc.Date) || period.To.Before(doc.Date)) {
+			if !period.From.After(doc.Date) && !period.To.Before(doc.Date) {
 				doc.Tags = append(doc.Tags, period.Tag)
 				doc.Periods = append(doc.Periods, period)
 

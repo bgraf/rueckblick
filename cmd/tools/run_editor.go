@@ -38,7 +38,7 @@ func lookupEditor() (string, error) {
 
 	editor, ok := os.LookupEnv("EDITOR")
 	if !ok {
-		return "", fmt.Errorf("Environment variable EDITOR not set")
+		return "", fmt.Errorf("environment variable EDITOR not set")
 	}
 
 	return exec.LookPath(editor)

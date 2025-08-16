@@ -115,20 +115,20 @@ func EmplaceGalleries(doc *data.Document, toResource MapToResourceFunc) {
 				continue
 			}
 
-			gallery.AppendImage(resource, file.path, t)
-
 			// Fetch thumbnail
 			thumb := data.ThumbnailPath(file.path)
 			if !filesystem.Exists(thumb) {
 				thumb = file.path
 				log.Printf("Thumb does not exist, using original file: %s", file.path)
 			}
-
-			resPath := resource.URI
 			thumbRes, ok := toResource(thumb)
 			if !ok {
 				continue
 			}
+
+			resPath := resource.URI
+
+			gallery.AppendImage(resource, thumbRes, file.path, t)
 
 			buf.WriteString("<div class=\"gallery-entry\"><a href=\"")
 			buf.WriteString(resPath)

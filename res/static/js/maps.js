@@ -62,7 +62,7 @@ function mountMap(container, data) {
             let popupAnchor = L.DomUtil.create('a', '', popupContainer);
             popupAnchor.href = img.URI;
             let popupImage = L.DomUtil.create('img', '', popupAnchor);
-            popupImage.src = img.URI;
+            popupImage.src = img.ThumbURI;
 
             marker.bindPopup(popupContainer);
 

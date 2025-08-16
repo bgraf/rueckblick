@@ -72,7 +72,9 @@ func genPreview(opts genPreviewOptions) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	img, _, err := image.Decode(f)
 	if err != nil {
@@ -91,7 +93,9 @@ func genPreview(opts genPreviewOptions) error {
 		return fmt.Errorf("could not create output image: %w", err)
 	}
 
-	defer fOut.Close()
+	defer func() {
+		_ = fOut.Close()
+	}()
 
 	jpegOpts := jpeg.Options{Quality: config.DefaultPreviewJPEGQuality()}
 	err = jpeg.Encode(fOut, previewImg, &jpegOpts)

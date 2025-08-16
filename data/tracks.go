@@ -12,8 +12,9 @@ import (
 )
 
 type GPXLocatedImage struct {
-	URI    string
-	LatLng geotrack.GPXPoint
+	URI      string
+	ThumbURI string
+	LatLng   geotrack.GPXPoint
 }
 
 func LoadTrack(trackFilePath string) (points []geotrack.GPXPoint, err error) {
@@ -60,8 +61,9 @@ func findMatchingImages(doc *Document, points []geotrack.GPXPoint) []GPXLocatedI
 				locatedImages = append(
 					locatedImages,
 					GPXLocatedImage{
-						URI:    img.Resource.URI,
-						LatLng: geotrack.GPXPoint{Lat: nearest.Lat, Lon: nearest.Lon},
+						URI:      img.Resource.URI,
+						ThumbURI: img.ThumbResource.URI,
+						LatLng:   geotrack.GPXPoint{Lat: nearest.Lat, Lon: nearest.Lon},
 					},
 				)
 			}
