@@ -9,6 +9,7 @@ import (
 
 	"github.com/bgraf/rueckblick/config"
 	"github.com/bgraf/rueckblick/geotrack"
+	"github.com/jftuga/geodist"
 )
 
 type GPXLocatedImage struct {
@@ -51,13 +52,29 @@ func findMatchingImages(doc *Document, points []geotrack.GPXPoint) []GPXLocatedI
 
 	for _, gal := range doc.Galleries {
 		for _, img := range gal.Images {
-			if img.Timestamp == nil {
+			if img.Timestamp.IsNone() {
 				continue
 			}
-			targetTime := *img.Timestamp
+			targetTime := img.Timestamp.Get()
 			nearest, duration := findClosestPointInTime(points, targetTime)
 
 			if duration < 120*time.Second {
+				if img.LatLon.IsSome() {
+					fmt.Printf("Found image with own coords: %#v %#v\n", img.LatLon.Get(), nearest)
+
+					_, dkm := geodist.HaversineDistance(
+						geodist.Coord{
+							Lat: img.LatLon.Get().Lat,
+							Lon: img.LatLon.Get().Lon,
+						},
+						geodist.Coord{
+							Lat: nearest.Lat,
+							Lon: nearest.Lon,
+						},
+					)
+					fmt.Printf("distance: %f\n", dkm)
+
+				}
 				locatedImages = append(
 					locatedImages,
 					GPXLocatedImage{
@@ -83,7 +100,7 @@ func findClosestPointInTime(points []geotrack.GPXPoint, targetTime time.Time) (g
 
 	durBest := time.Duration(1 << 62)
 	iBest := 0
-	for i := 0; i < len(points); i++ {
+	for i := range points {
 		durI := absDuration(targetTime.Sub(points[i].Time))
 		if durI <= durBest {
 			durBest = durI

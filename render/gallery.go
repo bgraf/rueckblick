@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bgraf/rueckblick/config"
@@ -52,7 +51,7 @@ func EmplaceGalleries(doc *data.Document, toResource MapToResourceFunc) {
 		filesExif := make(
 			[]struct {
 				path string
-				exif *images.EXIFData
+				exif images.EXIFData
 			},
 			len(files),
 		)
@@ -76,19 +75,19 @@ func EmplaceGalleries(doc *data.Document, toResource MapToResourceFunc) {
 				f1 := filesExif[i]
 				f2 := filesExif[j]
 
-				if f1.exif == nil && f2.exif == nil {
+				if f1.exif.Time.IsNone() && f2.exif.Time.IsNone() {
 					return f1.path < f2.path
 				}
 
-				if f1.exif == nil {
+				if f1.exif.Time.IsNone() {
 					return false
 				}
 
-				if f2.exif == nil {
+				if f2.exif.Time.IsNone() {
 					return true
 				}
 
-				return !f1.exif.Time.After(*f2.exif.Time)
+				return !f1.exif.Time.Get().After(f2.exif.Time.Get())
 			},
 		)
 
@@ -105,11 +104,6 @@ func EmplaceGalleries(doc *data.Document, toResource MapToResourceFunc) {
 		buf.WriteString(fmt.Sprintf(`<div class="gallery" id="%s">`, galleryElementID))
 
 		for _, file := range filesExif {
-			t := &time.Time{}
-			if file.exif != nil {
-				t = file.exif.Time
-			}
-
 			resource, ok := toResource(file.path)
 			if !ok {
 				continue
@@ -128,17 +122,17 @@ func EmplaceGalleries(doc *data.Document, toResource MapToResourceFunc) {
 
 			resPath := resource.URI
 
-			gallery.AppendImage(resource, thumbRes, file.path, t)
+			gallery.AppendImage(resource, thumbRes, file.path, file.exif.Time, file.exif.LatLon)
 
 			buf.WriteString("<div class=\"gallery-entry\"><a href=\"")
 			buf.WriteString(resPath)
 			buf.WriteString("\"><img class=\"gallery-item\" src=\"")
-			buf.WriteString(thumbRes.URI) // TODO <-- durch Thumbnail ersetzen
+			buf.WriteString(thumbRes.URI)
 			buf.WriteString("\"")
 
-			if file.exif != nil && file.exif.Time != nil {
+			if file.exif.Time.IsSome() {
 				buf.WriteString(" title=\"")
-				buf.WriteString(file.exif.Time.Format("2006-01-02 15:04:05"))
+				buf.WriteString(file.exif.Time.Get().Format("2006-01-02 15:04:05"))
 				buf.WriteString("\"")
 			}
 

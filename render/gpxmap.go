@@ -99,3 +99,49 @@ func GeoMaps(doc *data.Document) []data.GXPMap {
 
 	return maps
 }
+
+// InsertTracklessMap checks for geo-images and inserts them into a map above the first gallery.
+func InsertTracklessMap(doc *data.Document) {
+	var images []data.GPXLocatedImage
+	for _, gallery := range doc.Galleries {
+		for _, img := range gallery.Images {
+			if img.LatLon.IsSome() {
+				images = append(images, data.GPXLocatedImage{
+					URI:      img.Resource.URI,
+					ThumbURI: img.ThumbResource.URI,
+					LatLng:   img.LatLon.Get(),
+				})
+			}
+		}
+	}
+	if len(images) > 0 {
+		payload := map[string]any{
+			"images": images,
+		}
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			panic(err)
+		}
+
+		payloadStr := string(payloadBytes)
+
+		var buf bytes.Buffer
+
+		_, _ = buf.WriteString(fmt.Sprintf(`<div class="gpx-map" id="%s">`, "single-map"))
+
+		_, _ = buf.WriteString(fmt.Sprintf(`
+		<script>
+		(function () {
+			const mapData = %s;
+			let mapContainer = document.currentScript.parentElement;
+			window.addEventListener('DOMContentLoaded', function() {
+				mountMap(mapContainer, mapData);
+			});
+		})();
+		</script>`,
+			payloadStr,
+		))
+		_, _ = buf.WriteString("</div>")
+		doc.HTML.Find("div.gallery").First().BeforeHtml(buf.String())
+	}
+}

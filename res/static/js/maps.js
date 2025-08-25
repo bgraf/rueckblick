@@ -55,7 +55,7 @@ function mountMap(container, data) {
 
     if (data.images) {
         const markers = data.images.map(function (img) {
-            console.log(img);
+            console.log("BLA", img);
             let marker = L.marker(img.LatLng);
 
             let popupContainer = L.DomUtil.create('div', 'gpx-map-marker');
@@ -69,7 +69,8 @@ function mountMap(container, data) {
             return marker;
         });
 
-        overlayLayers.Photos = L.layerGroup(markers).addTo(map);
+        overlayLayers.Photos = L.featureGroup(markers).addTo(map);
+        focusControlLayers.push(overlayLayers.Photos);
     }
 
     L.control.layers({}, overlayLayers).addTo(map);

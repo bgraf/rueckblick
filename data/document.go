@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/bgraf/rueckblick/geotrack"
+	"github.com/bgraf/rueckblick/option"
 )
 
 type GXPMap struct {
@@ -18,7 +20,8 @@ type Image struct {
 	FilePath      string
 	Resource      Resource
 	ThumbResource Resource
-	Timestamp     *time.Time
+	Timestamp     option.Option[time.Time]
+	LatLon        option.Option[geotrack.GPXPoint]
 }
 
 type Gallery struct {
@@ -26,7 +29,7 @@ type Gallery struct {
 	Images    []Image
 }
 
-func (g *Gallery) AppendImage(res Resource, thumbRes Resource, filePath string, timestamp *time.Time) {
+func (g *Gallery) AppendImage(res Resource, thumbRes Resource, filePath string, timestamp option.Option[time.Time], latLon option.Option[geotrack.GPXPoint]) {
 	g.Images = append(
 		g.Images,
 		Image{
@@ -34,6 +37,7 @@ func (g *Gallery) AppendImage(res Resource, thumbRes Resource, filePath string, 
 			Resource:      res,
 			ThumbResource: thumbRes,
 			Timestamp:     timestamp,
+			LatLon:        latLon,
 		},
 	)
 }

@@ -27,5 +27,9 @@ func Render(doc *data.Document, opts data.StoreOptions) {
 	EmplaceGPXMaps(doc, toResource)
 	EmplaceVideos(doc, toResource)
 
+	if len(doc.Maps) == 0 {
+		InsertTracklessMap(doc)
+	}
+
 	doc.IsHtmlProcessed = true
 }
