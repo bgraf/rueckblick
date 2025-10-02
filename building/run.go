@@ -29,16 +29,17 @@ func normalizeFileName(s string) string {
 	return fileNameNormalizationPattern.ReplaceAllString(s, "_")
 }
 
-type Filenamer struct {
-}
+type Filenamer struct{}
 
 func (f Filenamer) EntryFile(doc *data.Document) string {
 	title := normalizeFileName(doc.Title)
 	return fmt.Sprintf("%s-%s.html", doc.Date.Format("2006-01-02"), title)
 }
+
 func (f Filenamer) CalendarFile(year, month int) string {
 	return fmt.Sprintf("cal-%04d-%02d.html", year, month)
 }
+
 func (f Filenamer) TagFile(tag data.Tag) string {
 	title := normalizeFileName(tag.Normalize())
 	return fmt.Sprintf("tag-%s.html", title)
@@ -307,6 +308,16 @@ func writeCalendarFiles(
 		}
 
 		first = dates.AddMonths(first, 1)
+	}
+
+	// Copy latest monthly calendar file as current calendar,
+	// so the links from all entry pages to the current calendar always
+	// link to the latest.
+	lastDate := dates.FirstDayOfMonth(store.Documents[0].Date)
+	latestCalendarFile := filepath.Join(state.BuildDirectory, state.filenamer.CalendarFile(lastDate.Year(), int(lastDate.Month())))
+	currentCalendarFile := filepath.Join(state.BuildDirectory, "current-calendar.html")
+	if err := filesystem.Copy(latestCalendarFile, currentCalendarFile); err != nil {
+		return err
 	}
 
 	return nil
